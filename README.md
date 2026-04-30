@@ -20,7 +20,7 @@ No cloud API required. No database. All memory stored as plain Markdown files.
 
 ```bash
 npm install
-npm run setup:model   # downloads Qwen3-4B-Instruct (~2.5 GB)
+npm run setup:model   # downloads Qwen3-4B-Instruct-2507 (~2.5 GB)
 npm run build
 npm start
 ```
@@ -152,13 +152,13 @@ safety:
 
 ### Default model (recommended)
 
-**Qwen3-4B-Instruct Q4_K_M** — ~2.5 GB, strong instruction following, multilingual.
+**Qwen3-4B-Instruct-2507 Q4_K_M** — ~2.5 GB, strong instruction following, multilingual.
 
 ```bash
 npm run setup:model
 ```
 
-Manual download: https://huggingface.co/unsloth/Qwen3-4B-Instruct-GGUF  
+Manual download: https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF  
 Save as: `./models/qwen3-4b-instruct-q4_k_m.gguf`
 
 ### Fallback model (weaker machines)
