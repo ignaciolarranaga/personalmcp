@@ -204,7 +204,7 @@ export function createMemoryDatabase(options: {
     const buffer = db.serialize();
     const encPath = join(memPath, DB_ENC_FILENAME);
     const tmpPath = `${encPath}.tmp`;
-    writeFileSync(tmpPath, encryptBuffer(buffer as Buffer, key!), "utf-8");
+    writeFileSync(tmpPath, encryptBuffer(buffer, key!), "utf-8");
     renameSync(tmpPath, encPath);
   };
 

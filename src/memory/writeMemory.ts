@@ -47,7 +47,7 @@ export function writeMemoryItems(
 
     if (item.update_type === "update") {
       const key = item.content.toLowerCase().slice(0, 60);
-      const existing = db.queryRecords({ status: "active", kind: [item.category as MemoryKind] });
+      const existing = db.queryRecords({ status: "active", kind: [item.category] });
       const match = existing.find((r) => {
         const t = r.text.toLowerCase();
         return t.includes(key) || key.includes(t.slice(0, 60));
