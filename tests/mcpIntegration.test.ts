@@ -13,7 +13,13 @@ import { createMemoryDatabase } from "../src/memory/db.js";
 import { initializeMemoryStorage, parseCliOptions } from "../src/memory/unlock.js";
 import { unlockOrCreateVault } from "../src/memory/vault.js";
 import type { DebugLogger } from "../src/debug.js";
-import type { Config, GenerateInput, GenerateOutput, MemoryDatabase, MemoryKind } from "../src/types.js";
+import type {
+  Config,
+  GenerateInput,
+  GenerateOutput,
+  MemoryDatabase,
+  MemoryKind,
+} from "../src/types.js";
 import type { LlmProvider } from "../src/llm/LlmProvider.js";
 
 type LlmResponse = string | Error | ((input: GenerateInput) => string);
@@ -153,13 +159,24 @@ describe("MCP integration", () => {
     });
 
     const profileRecords = server.db.queryRecords({ status: "active", kind: ["profile"] });
-    expect(profileRecords.some((r) => r.text.includes("Ignacio leads engineering and product teams."))).toBe(true);
+    expect(
+      profileRecords.some((r) => r.text.includes("Ignacio leads engineering and product teams.")),
+    ).toBe(true);
 
     const prefRecords = server.db.queryRecords({ status: "active", kind: ["preference"] });
-    expect(prefRecords.some((r) => r.text.includes("Ignacio prefers concise engineering communication."))).toBe(true);
+    expect(
+      prefRecords.some((r) =>
+        r.text.includes("Ignacio prefers concise engineering communication."),
+      ),
+    ).toBe(true);
 
-    const styleRecords = server.db.queryRecords({ status: "active", kind: ["communication_style"] });
-    expect(styleRecords.some((r) => r.text.includes("Ignacio communicates directly and pragmatically."))).toBe(true);
+    const styleRecords = server.db.queryRecords({
+      status: "active",
+      kind: ["communication_style"],
+    });
+    expect(
+      styleRecords.some((r) => r.text.includes("Ignacio communicates directly and pragmatically.")),
+    ).toBe(true);
 
     const sources = server.db.listSources();
     expect(sources).toHaveLength(1);
@@ -296,7 +313,13 @@ describe("MCP integration", () => {
     });
     writeMemoryRecord(server.db, "profile", "Ignacio leads engineering teams", 0.9);
     writeMemoryRecord(server.db, "fact", "Ignacio works on local-first tools", 0.9);
-    writeMemoryRecord(server.db, "private", "Ignacio has a private compensation target", 0.9, "secret");
+    writeMemoryRecord(
+      server.db,
+      "private",
+      "Ignacio has a private compensation target",
+      0.9,
+      "secret",
+    );
 
     await callTool(server.client, "ask", {
       question: "What should the public know?",
@@ -464,7 +487,10 @@ async function startTestServer(
   const memPath = options.memPath ?? mkdtempSync(join(tmpdir(), "personalmcp-test-"));
   const db = options.db ?? createMemoryDatabase({ memPath, mode: "plain" });
   const llm = new QueueLlmProvider(options.responses);
-  const config = makeConfig(memPath, { ...options.config, memory: { path: memPath, mode: "plain", storage: db, ...options.config?.memory } });
+  const config = makeConfig(memPath, {
+    ...options.config,
+    memory: { path: memPath, mode: "plain", storage: db, ...options.config?.memory },
+  });
   const mcpServer = createServer(llm, config, options.debugLogger);
   const serverTransport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
