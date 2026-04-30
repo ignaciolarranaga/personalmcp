@@ -37,6 +37,8 @@ Once running, connect your MCP client to `http://localhost:3000/mcp` — see the
 
 ## GitHub Codespaces
 
+[Create a Codespace for PersonalMCP](https://codespaces.new/ignaciolarranaga/personalmcp)
+
 The repository includes a `.devcontainer` setup for Codespaces. It uses Node.js 22 and installs the
 native build tools needed by `better-sqlite3` and `node-llama-cpp` (`build-essential`, Python,
 CMake, Ninja, and related compiler tooling). When the Codespace is created it runs:
