@@ -4,7 +4,7 @@ A local-first MCP server that acts as your personal digital twin.
 
 Feed it transcripts, notes, and documents. It extracts durable memory locally using a GGUF model. Any MCP-compatible client can then ask it questions about you or draft responses in your voice.
 
-No cloud API required. No database. All memory stored as plain Markdown files.
+No cloud API required. No database. Memory is encrypted on disk by default.
 
 ---
 
@@ -25,6 +25,10 @@ npm run build
 npm start             # starts the MCP server on http://localhost:3000/mcp
 npm start -- --debug  # optional: logs MCP calls and LLM prompt/output snippets
 ```
+
+The first `npm start` asks you to create a memory password. PersonalMCP uses that password to
+initialize encrypted storage automatically. Remember it or store it securely; encrypted memory
+cannot be recovered if the password is lost.
 
 Once running, connect your MCP client to `http://localhost:3000/mcp` — see the section below for your client.
 
@@ -196,21 +200,25 @@ Start with `suggest_question` if you have no memory yet. The tool will suggest w
 
 ## Memory Files
 
-Memory is stored as plain Markdown files in `./memory/`:
+Memory is encrypted by default in `./memory/`. The first startup creates `vault.json`, then memory
+files are created on first write:
 
 ```
 memory/
-  profile.md           — identity, name, role
-  facts.md             — work history, projects, skills
-  preferences.md       — communication, work, technology preferences
-  principles.md        — decision-making heuristics, beliefs
-  opinions.md          — views on specific topics
-  communication_style.md — how the owner writes and communicates
-  private.md           — sensitive information (gitignored)
-  sources.json         — index of ingested sources
+  vault.json                 — vault metadata and password verification data, not the password
+  profile.md.enc             — identity, name, role
+  facts.md.enc               — work history, projects, skills
+  preferences.md.enc         — communication, work, technology preferences
+  principles.md.enc          — decision-making heuristics, beliefs
+  opinions.md.enc            — views on specific topics
+  communication_style.md.enc — how the owner writes and communicates
+  private.md.enc             — sensitive information
+  sources.json.enc           — index of ingested sources
 ```
 
-You can inspect and edit these files directly. They are human-readable.
+Use `memory.mode: plain` only for local testing/debugging. In plain mode, PersonalMCP uses the
+same filenames without `.enc` and stores human-readable Markdown/JSON. Existing plaintext memory is
+not migrated automatically in this version.
 
 ---
 
@@ -234,6 +242,7 @@ llm:
 
 memory:
   path: ./memory
+  mode: encrypted # default; set to plain only for local testing/debugging
 
 safety:
   allow_first_person: true
@@ -270,13 +279,22 @@ Then update `config.yaml`: set `llm.model_path` to `./models/llama-3.2-3b-instru
 
 ---
 
-## Utility Commands
+## Non-Interactive Startup
+
+For service managers or MCP clients that start the server without an interactive terminal, provide
+the memory password through an environment variable:
 
 ```bash
-npm run memory:show      # print all memory files
-npm run memory:reset     # clear all memory (keeps file structure)
-npm run memory:backup    # copy memory/ to a timestamped backup folder
+PERSONALMCP_PASSWORD='your memory password' npm start
 ```
+
+Or store the password in a local file and pass the file path:
+
+```bash
+npm start -- --password-file ./local-password-file
+```
+
+Keep password files outside version control.
 
 ---
 
@@ -358,7 +376,8 @@ User → Claude Desktop → ask(
 
 - The local server uses HTTP on `localhost`. Use a tunnel such as ngrok when a public HTTPS URL is required.
 - Do not keep a public tunnel open longer than needed without adding authentication or tunnel-level access control.
-- `private.md` is gitignored. Sensitive memory stays local.
+- Memory files are encrypted on disk by default and ignored by Git.
+- Keep your memory password safe. If it is lost, encrypted memory cannot be recovered.
 - Private memory is not exposed when `audience` is `public` or `unknown`.
 - No shell execution tools are exposed through MCP.
 

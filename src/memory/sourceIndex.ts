@@ -1,30 +1,26 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
 import { createHash } from "crypto";
-import type { SourceRecord, SourceType } from "../types.js";
+import type { MemoryStorage, SourceRecord, SourceType } from "../types.js";
 
-function sourcesPath(memPath: string): string {
-  return join(memPath, "sources.json");
-}
+const SOURCES_FILENAME = "sources.json";
 
-export function readSourceIndex(memPath: string): SourceRecord[] {
-  const fp = sourcesPath(memPath);
-  if (!existsSync(fp)) return [];
+export function readSourceIndex(storage: MemoryStorage): SourceRecord[] {
+  if (!storage.exists(SOURCES_FILENAME)) return [];
+  const content = storage.readText(SOURCES_FILENAME);
   try {
-    return JSON.parse(readFileSync(fp, "utf-8")) as SourceRecord[];
+    return JSON.parse(content) as SourceRecord[];
   } catch {
     return [];
   }
 }
 
-export function addSourceRecord(memPath: string, record: SourceRecord): void {
-  const records = readSourceIndex(memPath);
+export function addSourceRecord(storage: MemoryStorage, record: SourceRecord): void {
+  const records = readSourceIndex(storage);
   records.push(record);
-  writeFileSync(sourcesPath(memPath), JSON.stringify(records, null, 2), "utf-8");
+  storage.writeText(SOURCES_FILENAME, JSON.stringify(records, null, 2));
 }
 
-export function generateSourceId(memPath: string, date: string): string {
-  const records = readSourceIndex(memPath);
+export function generateSourceId(storage: MemoryStorage, date: string): string {
+  const records = readSourceIndex(storage);
   const prefix = `src_${date.replace(/-/g, "_")}`;
   const count = records.filter((r) => r.id.startsWith(prefix)).length + 1;
   return `${prefix}_${String(count).padStart(3, "0")}`;
@@ -34,13 +30,13 @@ export function hashContent(content: string): string {
   return createHash("sha256").update(content).digest("hex").slice(0, 16);
 }
 
-export function isDuplicateSource(memPath: string, contentHash: string): boolean {
-  const records = readSourceIndex(memPath);
+export function isDuplicateSource(storage: MemoryStorage, contentHash: string): boolean {
+  const records = readSourceIndex(storage);
   return records.some((r) => r.content_hash === contentHash);
 }
 
 export function buildSourceRecord(
-  memPath: string,
+  storage: MemoryStorage,
   content: string,
   title: string | undefined,
   type: SourceType | undefined,
@@ -48,7 +44,7 @@ export function buildSourceRecord(
   memoryItemIds: string[]
 ): SourceRecord {
   const today = new Date().toISOString().slice(0, 10);
-  const id = generateSourceId(memPath, today);
+  const id = generateSourceId(storage, today);
   return {
     id,
     title,

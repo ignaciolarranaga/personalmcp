@@ -1,6 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
-import type { MemoryItem, MemoryCategory } from "../types.js";
+import type { MemoryItem, MemoryCategory, MemoryStorage } from "../types.js";
 
 const CATEGORY_FILE: Record<Exclude<MemoryCategory, "ignore">, string> = {
   profile: "profile.md",
@@ -27,7 +25,7 @@ function formatItem(item: MemoryItem): string {
 }
 
 export function writeMemoryItems(
-  memPath: string,
+  storage: MemoryStorage,
   items: MemoryItem[]
 ): { written: number } {
   const byCategory = new Map<Exclude<MemoryCategory, "ignore">, MemoryItem[]>();
@@ -43,10 +41,9 @@ export function writeMemoryItems(
 
   for (const [cat, catItems] of byCategory) {
     const filename = CATEGORY_FILE[cat];
-    const filePath = join(memPath, filename);
     const heading = `# ${CATEGORY_HEADING[cat]}`;
 
-    let content = existsSync(filePath) ? readFileSync(filePath, "utf-8") : `${heading}\n`;
+    let content = storage.exists(filename) ? storage.readText(filename) : `${heading}\n`;
 
     for (const item of catItems) {
       if (item.update_type === "ignore") continue;
@@ -76,7 +73,7 @@ export function writeMemoryItems(
       written++;
     }
 
-    writeFileSync(filePath, content, "utf-8");
+    storage.writeText(filename, content);
   }
 
   return { written };

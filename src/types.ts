@@ -130,12 +130,21 @@ export interface Config {
   };
   memory: {
     path: string;
+    mode?: "encrypted" | "plain";
+    storage?: MemoryStorage;
   };
   safety: {
     allow_first_person: boolean;
     public_can_access_private_memory: boolean;
     require_disclaimer_for_inferred_answers: boolean;
   };
+}
+
+export interface MemoryStorage {
+  exists(filename: string): boolean;
+  readText(filename: string): string;
+  writeText(filename: string, content: string): void;
+  rawPath(filename: string): string;
 }
 
 export interface MergeResult {

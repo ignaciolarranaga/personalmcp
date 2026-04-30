@@ -13,10 +13,7 @@
     "test:watch": "vitest",
     "dev": "node dist/index.js",
     "start": "node dist/index.js",
-    "setup:model": "node dist/scripts/setup-model.js",
-    "memory:show": "cat memory/*.md",
-    "memory:reset": "node --input-type=module <<'EOF'\nimport { readdirSync, writeFileSync } from 'fs';\nconst categories = ['profile','facts','preferences','principles','opinions','communication_style','private'];\ncategories.forEach(c => writeFileSync(`memory/${c}.md`, `# ${c.replace('_',' ').replace(/\\b\\w/g, l => l.toUpperCase())}\\n`));\nconsole.log('Memory reset.');\nEOF",
-    "memory:backup": "node --input-type=module <<'EOF'\nimport { cpSync } from 'fs';\nconst ts = new Date().toISOString().slice(0,19).replace(/:/g,'-');\ncpSync('memory', `memory_backup_${ts}`, { recursive: true });\nconsole.log(`Backed up to memory_backup_${ts}`);\nEOF"
+    "setup:model": "node dist/scripts/setup-model.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

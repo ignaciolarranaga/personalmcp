@@ -1,6 +1,8 @@
 node_modules/
 dist/
 models/
-memory/private.md
+/memory/
+*.password
+.env
 *.gguf
 .DS_Store

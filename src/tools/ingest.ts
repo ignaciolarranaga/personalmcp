@@ -7,6 +7,7 @@ import {
   isDuplicateSource,
   hashContent,
 } from "../memory/sourceIndex.js";
+import { requireMemoryStorage } from "../memory/storage.js";
 import type { LlmProvider } from "../llm/LlmProvider.js";
 import type { IngestInput, IngestOutput, Config } from "../types.js";
 
@@ -16,11 +17,11 @@ export async function handleIngest(
   config: Config,
 ): Promise<IngestOutput> {
   const warnings: string[] = [];
-  const memPath = config.memory.path;
+  const storage = requireMemoryStorage(config);
 
   // Dedup check
   const contentHash = hashContent(input.content);
-  if (isDuplicateSource(memPath, contentHash)) {
+  if (isDuplicateSource(storage, contentHash)) {
     return {
       success: true,
       memory_items_added: 0,
@@ -78,18 +79,18 @@ export async function handleIngest(
     warnings.push(`${sensitiveItems.length} sensitive item(s) were stored in private memory.`);
   }
 
-  const { added, updated, ignored } = mergeMemoryItems(memPath, items);
+  const { added, updated, ignored } = mergeMemoryItems(storage, items);
 
   // Record the source
   const record = buildSourceRecord(
-    memPath,
+    storage,
     input.content,
     input.source_title,
     input.source_type,
     input.source_date,
     items.map((_, i) => `mem_${contentHash}_${i}`),
   );
-  addSourceRecord(memPath, record);
+  addSourceRecord(storage, record);
 
   const summary = buildIngestSummary(added, updated, ignored, input.source_title);
 

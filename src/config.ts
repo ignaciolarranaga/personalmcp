@@ -20,6 +20,10 @@ export function loadConfig(configPath?: string): Config {
   if (!parsed?.memory?.path) {
     throw new Error("config.yaml must include memory.path");
   }
+  parsed.memory.mode = parsed.memory.mode ?? "encrypted";
+  if (parsed.memory.mode !== "encrypted" && parsed.memory.mode !== "plain") {
+    throw new Error("config.yaml memory.mode must be either encrypted or plain");
+  }
 
   return parsed;
 }

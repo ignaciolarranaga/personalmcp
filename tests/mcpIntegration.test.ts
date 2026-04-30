@@ -9,6 +9,9 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer } from "../src/server.js";
+import { createEncryptedMemoryStorage, createPlainMemoryStorage } from "../src/memory/storage.js";
+import { initializeMemoryStorage, parseCliOptions } from "../src/memory/unlock.js";
+import { unlockOrCreateVault } from "../src/memory/vault.js";
 import type { DebugLogger } from "../src/debug.js";
 import type { Config, GenerateInput, GenerateOutput } from "../src/types.js";
 import type { LlmProvider } from "../src/llm/LlmProvider.js";
@@ -411,6 +414,95 @@ describe("MCP integration", () => {
     });
     expect(debugLogger.events[1].details?.durationMs).toEqual(expect.any(Number));
   });
+
+  it("initializes encrypted memory on first startup with an environment password", async () => {
+    const memPath = mkdtempSync(join(tmpdir(), "personalmcp-encrypted-start-"));
+    const originalPassword = process.env.PERSONALMCP_PASSWORD;
+    process.env.PERSONALMCP_PASSWORD = "correct horse battery staple";
+    try {
+      const config = makeConfig(memPath, {
+        memory: {
+          path: memPath,
+          mode: "encrypted",
+        },
+      });
+
+      await initializeMemoryStorage(config, parseCliOptions([]));
+
+      expect(existsSync(join(memPath, "vault.json"))).toBe(true);
+      expect(config.memory.storage?.exists("profile.md")).toBe(false);
+    } finally {
+      if (originalPassword === undefined) delete process.env.PERSONALMCP_PASSWORD;
+      else process.env.PERSONALMCP_PASSWORD = originalPassword;
+      rmSync(memPath, { recursive: true, force: true });
+    }
+  });
+
+  it("unlocks encrypted memory with a password file and rejects the wrong password", async () => {
+    const memPath = mkdtempSync(join(tmpdir(), "personalmcp-encrypted-unlock-"));
+    const passwordFile = join(memPath, "password.txt");
+    writeFileSync(passwordFile, "vault password\n", "utf-8");
+
+    try {
+      unlockOrCreateVault(memPath, "vault password");
+      const config = makeConfig(memPath, {
+        memory: {
+          path: memPath,
+          mode: "encrypted",
+        },
+      });
+
+      await initializeMemoryStorage(config, parseCliOptions(["--password-file", passwordFile]));
+      expect(config.memory.storage).toBeDefined();
+      expect(() => unlockOrCreateVault(memPath, "wrong password")).toThrow(
+        "Cannot unlock encrypted memory",
+      );
+    } finally {
+      rmSync(memPath, { recursive: true, force: true });
+    }
+  });
+
+  it("ingests and asks through encrypted memory without storing plaintext on disk", async () => {
+    const memPath = mkdtempSync(join(tmpdir(), "personalmcp-encrypted-mcp-"));
+    const vault = unlockOrCreateVault(memPath, "vault password");
+    const storage = createEncryptedMemoryStorage(memPath, vault.key);
+    const server = await startTestServer({
+      memPath,
+      skipMemorySkeletons: true,
+      config: {
+        memory: {
+          path: memPath,
+          mode: "encrypted",
+          storage,
+        },
+      },
+      responses: [
+        JSON.stringify({
+          items: [
+            memoryItem("profile", "Ignacio leads engineering teams."),
+            memoryItem("fact", "Ignacio works on encrypted local memory."),
+            memoryItem("preference", "Ignacio prefers direct communication."),
+          ],
+        }),
+        "Encrypted memory was read successfully.",
+      ],
+    });
+
+    await callTool(server.client, "ingest", {
+      content: "I lead engineering teams and work on encrypted local memory.",
+      source_type: "owner_answer",
+    });
+    const rawProfile = readFileSync(join(memPath, "profile.md.enc"), "utf-8");
+    expect(rawProfile).not.toContain("Ignacio leads engineering teams");
+    expect(existsSync(join(memPath, "profile.md"))).toBe(false);
+
+    const result = await callTool(server.client, "ask", {
+      question: "What does Ignacio work on?",
+      audience: "owner",
+    });
+
+    expect(result.structuredContent?.answer).toBe("Encrypted memory was read successfully.");
+  });
 });
 
 async function startTestServer(
@@ -418,9 +510,11 @@ async function startTestServer(
     responses?: LlmResponse[];
     config?: Partial<Config>;
     debugLogger?: DebugLogger;
+    memPath?: string;
+    skipMemorySkeletons?: boolean;
   } = {},
 ): Promise<RunningTestServer> {
-  const memPath = createMemoryDir();
+  const memPath = options.memPath ?? createMemoryDir(options.skipMemorySkeletons);
   const llm = new QueueLlmProvider(options.responses);
   const config = makeConfig(memPath, options.config);
   const mcpServer = createServer(llm, config, options.debugLogger);
@@ -460,8 +554,9 @@ async function startTestServer(
   return runningServer;
 }
 
-function createMemoryDir(): string {
+function createMemoryDir(skipSkeletons = false): string {
   const memPath = mkdtempSync(join(tmpdir(), "personalmcp-test-"));
+  if (skipSkeletons) return memPath;
   for (const [filename, heading] of Object.entries(MEMORY_FILES)) {
     writeFileSync(join(memPath, filename), `# ${heading}\n`, "utf-8");
   }
@@ -486,6 +581,8 @@ function makeConfig(memPath: string, overrides: Partial<Config> = {}): Config {
     },
     memory: {
       path: memPath,
+      mode: "plain",
+      storage: createPlainMemoryStorage(memPath),
       ...overrides.memory,
     },
     safety: {

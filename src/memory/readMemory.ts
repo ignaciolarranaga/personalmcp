@@ -1,5 +1,4 @@
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
+import type { MemoryStorage } from "../types.js";
 
 const MEMORY_FILES: Record<string, string> = {
   "profile.md": "Profile",
@@ -11,16 +10,15 @@ const MEMORY_FILES: Record<string, string> = {
   "private.md": "Private",
 };
 
-export function readAllMemory(memPath: string, excludePrivate = false): string {
+export function readAllMemory(storage: MemoryStorage, excludePrivate = false): string {
   const parts: string[] = [];
 
   for (const [filename, label] of Object.entries(MEMORY_FILES)) {
     if (excludePrivate && filename === "private.md") continue;
 
-    const filePath = join(memPath, filename);
-    if (!existsSync(filePath)) continue;
+    if (!storage.exists(filename)) continue;
 
-    const content = readFileSync(filePath, "utf-8").trim();
+    const content = storage.readText(filename).trim();
     const lines = content.split("\n").filter((l) => l.trim().startsWith("-"));
     if (lines.length === 0) continue;
 
@@ -30,12 +28,11 @@ export function readAllMemory(memPath: string, excludePrivate = false): string {
   return parts.length > 0 ? parts.join("\n\n") : "";
 }
 
-export function countMemoryItems(memPath: string): number {
+export function countMemoryItems(storage: MemoryStorage): number {
   let count = 0;
   for (const filename of Object.keys(MEMORY_FILES)) {
-    const filePath = join(memPath, filename);
-    if (!existsSync(filePath)) continue;
-    const content = readFileSync(filePath, "utf-8");
+    if (!storage.exists(filename)) continue;
+    const content = storage.readText(filename);
     count += content.split("\n").filter((l) => l.trim().startsWith("-")).length;
   }
   return count;

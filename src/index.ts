@@ -5,11 +5,13 @@ import { loadConfig } from "./config.js";
 import { createDebugLogger } from "./debug.js";
 import { NodeLlamaCppProvider } from "./llm/NodeLlamaCppProvider.js";
 import { createServer } from "./server.js";
+import { initializeMemoryStorage, parseCliOptions } from "./memory/unlock.js";
 
 async function main() {
-  const debugEnabled = process.argv.slice(2).includes("--debug");
-  const debugLogger = createDebugLogger({ enabled: debugEnabled });
+  const options = parseCliOptions(process.argv.slice(2));
+  const debugLogger = createDebugLogger({ enabled: options.debugEnabled });
   const config = loadConfig();
+  await initializeMemoryStorage(config, options);
   const port = config.server?.port ?? 3000;
 
   const llm = new NodeLlamaCppProvider(
@@ -37,7 +39,7 @@ async function main() {
 
   httpServer.listen(port, () => {
     console.error(`[PersonalMCP] Server ready on http://localhost:${port}/mcp`);
-    if (debugEnabled) {
+    if (options.debugEnabled) {
       console.error("[PersonalMCP] Debug logging enabled.");
     }
   });

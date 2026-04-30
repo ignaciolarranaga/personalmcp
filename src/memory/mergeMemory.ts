@@ -1,18 +1,15 @@
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
 import { writeMemoryItems } from "./writeMemory.js";
-import type { MemoryItem, MergeResult } from "../types.js";
+import type { MemoryItem, MergeResult, MemoryStorage } from "../types.js";
 
-function readExistingLines(memPath: string): string[] {
+function readExistingLines(storage: MemoryStorage): string[] {
   const filenames = [
     "profile.md", "facts.md", "preferences.md", "principles.md",
     "opinions.md", "communication_style.md", "private.md",
   ];
   const lines: string[] = [];
   for (const f of filenames) {
-    const fp = join(memPath, f);
-    if (!existsSync(fp)) continue;
-    const content = readFileSync(fp, "utf-8");
+    if (!storage.exists(f)) continue;
+    const content = storage.readText(f);
     for (const line of content.split("\n")) {
       if (line.trim().startsWith("- ")) {
         lines.push(line.trim().replace(/^- /, "").replace(/\s*\[confidence:.*\]$/, "").toLowerCase());
@@ -29,8 +26,8 @@ function isDuplicate(item: MemoryItem, existingLines: string[]): boolean {
   );
 }
 
-export function mergeMemoryItems(memPath: string, newItems: MemoryItem[]): MergeResult {
-  const existing = readExistingLines(memPath);
+export function mergeMemoryItems(storage: MemoryStorage, newItems: MemoryItem[]): MergeResult {
+  const existing = readExistingLines(storage);
   const toWrite: MemoryItem[] = [];
   let added = 0;
   let updated = 0;
@@ -53,6 +50,6 @@ export function mergeMemoryItems(memPath: string, newItems: MemoryItem[]): Merge
     }
   }
 
-  writeMemoryItems(memPath, toWrite);
+  writeMemoryItems(storage, toWrite);
   return { added, updated, ignored };
 }
