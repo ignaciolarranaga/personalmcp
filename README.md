@@ -68,6 +68,42 @@ Use URL `http://localhost:3000/mcp` with transport type **Streamable HTTP**.
 
 ---
 
+## Debugging with MCP Inspector
+
+The Anthropic / Model Context Protocol debugging tool is **MCP Inspector**. It gives you a browser UI for connecting to an MCP server, listing tools, inspecting schemas, and calling tools with test inputs.
+
+Start PersonalMCP in one terminal:
+
+```bash
+npm run build
+npm start
+```
+
+Start the Inspector in another terminal:
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+The Inspector terminal prints a proxy session token. If the UI shows **Proxy Authentication Required**, copy that token, open **Configuration** in the Inspector UI, paste it into the proxy/session token field, and save.
+
+Open the Inspector UI, usually `http://localhost:6274`, then connect with:
+
+- **Transport type:** `Streamable HTTP`
+- **URL:** `http://localhost:3000/mcp`
+
+After connecting, open the **Tools** tab and run **List Tools**. You should see:
+
+- `ingest`
+- `ask`
+- `suggest_question`
+
+Use the Inspector to call a tool directly and inspect the raw response. If a call fails, check both terminals: the Inspector terminal shows client/proxy connection issues, and the PersonalMCP terminal shows server-side errors such as model loading, config, or tool execution failures.
+
+If `npx` reports an unsupported Node.js version for the Inspector, use Node.js 22 or later for the Inspector process. PersonalMCP itself only requires Node.js 18 or later.
+
+---
+
 ## Tools
 
 ### `ingest`
