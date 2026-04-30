@@ -59,11 +59,13 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
         };
       } catch (err) {
         return {
-          content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
+          content: [
+            { type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` },
+          ],
           isError: true,
         };
       }
-    }
+    },
   );
 
   // ── ask ──────────────────────────────────────────────────────────────────────
@@ -82,7 +84,9 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
           .enum(["about_owner", "as_owner", "likely_opinion", "draft_response"])
           .optional()
           .default("about_owner")
-          .describe("How to answer: about the owner, as the owner, as likely opinion, or as a draft"),
+          .describe(
+            "How to answer: about the owner, as the owner, as likely opinion, or as a draft",
+          ),
         audience: z
           .enum(["owner", "public", "trusted", "unknown"])
           .optional()
@@ -106,11 +110,13 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
         };
       } catch (err) {
         return {
-          content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
+          content: [
+            { type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` },
+          ],
           isError: true,
         };
       }
-    }
+    },
   );
 
   // ── suggest_question ─────────────────────────────────────────────────────────
@@ -161,11 +167,13 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
         };
       } catch (err) {
         return {
-          content: [{ type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
+          content: [
+            { type: "text", text: `Error: ${err instanceof Error ? err.message : String(err)}` },
+          ],
           isError: true,
         };
       }
-    }
+    },
   );
 
   return server;

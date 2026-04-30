@@ -12,7 +12,7 @@ async function main() {
   const llm = new NodeLlamaCppProvider(
     config.llm.model_path,
     config.llm.temperature,
-    config.llm.max_tokens
+    config.llm.max_tokens,
   );
 
   await llm.initialize();

@@ -8,12 +8,13 @@ const INSUFFICIENT_MEMORY_THRESHOLD = 3;
 export async function handleAsk(
   input: AskInput,
   llm: LlmProvider,
-  config: Config
+  config: Config,
 ): Promise<AskOutput> {
   const memPath = config.memory.path;
   const mode = input.mode ?? "about_owner";
   const audience = input.audience ?? "unknown";
-  const excludePrivate = !config.safety.public_can_access_private_memory &&
+  const excludePrivate =
+    !config.safety.public_can_access_private_memory &&
     (audience === "public" || audience === "unknown");
 
   const itemCount = countMemoryItems(memPath);
@@ -59,7 +60,9 @@ export async function handleAsk(
     config.safety.require_disclaimer_for_inferred_answers &&
     (authority === "inferred" || mode === "likely_opinion")
   ) {
-    warnings.push("This is an inferred answer based on stored memory, not a direct statement from the owner.");
+    warnings.push(
+      "This is an inferred answer based on stored memory, not a direct statement from the owner.",
+    );
   }
 
   return {
@@ -73,7 +76,11 @@ export async function handleAsk(
 
 function inferAuthority(answer: string, mode: string): Authority {
   const lower = answer.toLowerCase();
-  if (lower.includes("insufficient") || lower.includes("no memory") || lower.includes("don't have")) {
+  if (
+    lower.includes("insufficient") ||
+    lower.includes("no memory") ||
+    lower.includes("don't have")
+  ) {
     return "insufficient_memory";
   }
   if (mode === "likely_opinion" || lower.includes("would likely") || lower.includes("inferred")) {
@@ -96,6 +103,11 @@ function summarizeUsedMemory(memory: string): string[] {
   return memory
     .split("\n")
     .filter((l) => l.trim().startsWith("- "))
-    .map((l) => l.trim().replace(/^- /, "").replace(/\s*\[confidence:.*\]$/, ""))
+    .map((l) =>
+      l
+        .trim()
+        .replace(/^- /, "")
+        .replace(/\s*\[confidence:.*\]$/, ""),
+    )
     .slice(0, 5);
 }

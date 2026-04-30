@@ -11,11 +11,7 @@ const MODE_INSTRUCTIONS: Record<AskMode, string> = {
     "Draft a response in the owner's writing style that they could use directly. Match their tone.",
 };
 
-export function buildChatSystem(
-  memory: string,
-  mode: AskMode,
-  safety: Config["safety"]
-): string {
+export function buildChatSystem(memory: string, mode: AskMode, safety: Config["safety"]): string {
   const modeInstruction = MODE_INSTRUCTIONS[mode];
   const firstPersonNote =
     mode === "as_owner" && !safety.allow_first_person

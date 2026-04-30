@@ -238,10 +238,10 @@ Edit `config.yaml` to change settings:
 
 ```yaml
 server:
-  port: 3000           # HTTP port the MCP server listens on
+  port: 3000 # HTTP port the MCP server listens on
 
 owner:
-  name: null           # learned through ingestion
+  name: null # learned through ingestion
   preferred_language: null
 
 llm:

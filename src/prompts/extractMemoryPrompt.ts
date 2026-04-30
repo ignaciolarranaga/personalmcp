@@ -57,7 +57,7 @@ const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
 export function buildExtractionUser(
   content: string,
   sourceType?: SourceType,
-  instructions?: string
+  instructions?: string,
 ): string {
   const sourceLabel = sourceType ? SOURCE_TYPE_LABELS[sourceType] : "personal content";
   const instructionBlock = instructions

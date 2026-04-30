@@ -4,10 +4,13 @@ const GOAL_INSTRUCTIONS: Record<MemoryGoal, string> = {
   build_initial_memory: "Ask a broad identity-building question since memory is empty or minimal.",
   improve_profile: "Focus on professional identity, current role, or public bio.",
   learn_preferences: "Focus on work, communication, or technology preferences.",
-  learn_principles: "Focus on decision-making heuristics, leadership beliefs, or engineering principles.",
+  learn_principles:
+    "Focus on decision-making heuristics, leadership beliefs, or engineering principles.",
   learn_opinions: "Focus on views on specific topics, technologies, or practices.",
-  learn_communication_style: "Focus on how the owner writes, communicates, or prefers to be represented.",
-  fill_gaps: "Inspect the existing memory and ask about the most notable gap or underrepresented category.",
+  learn_communication_style:
+    "Focus on how the owner writes, communicates, or prefers to be represented.",
+  fill_gaps:
+    "Inspect the existing memory and ask about the most notable gap or underrepresented category.",
   general: "Generate a high-signal question that will build useful memory.",
 };
 
@@ -42,7 +45,7 @@ Output ONLY a valid JSON object in this exact format, with no other text:
 export function buildSuggestUser(
   goal?: MemoryGoal,
   topic?: string,
-  previousQuestions?: string[]
+  previousQuestions?: string[],
 ): string {
   const goalInstruction = goal ? GOAL_INSTRUCTIONS[goal] : GOAL_INSTRUCTIONS["general"];
   const topicLine = topic ? `\nFocus topic: ${topic}` : "";

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
 const MEMORY_FILES: Record<string, string> = {

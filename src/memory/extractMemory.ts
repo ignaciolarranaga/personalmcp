@@ -36,7 +36,7 @@ export function parseExtractedMemory(llmOutput: string): MemoryItem[] {
 
   let parsed: { items?: RawMemoryItem[] };
   try {
-    parsed = JSON.parse(jsonMatch[0]);
+    parsed = JSON.parse(jsonMatch[0]) as { items?: RawMemoryItem[] };
   } catch {
     return [];
   }

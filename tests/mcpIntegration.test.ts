@@ -1,11 +1,5 @@
 import { randomUUID } from "node:crypto";
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer as createHttpServer, type Server as HttpServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { join } from "node:path";
@@ -99,7 +93,11 @@ describe("MCP integration", () => {
         }),
       ],
     });
-    writeMemoryFile(server.memPath, "profile.md", "- Ignacio leads engineering teams [confidence: high]");
+    writeMemoryFile(
+      server.memPath,
+      "profile.md",
+      "- Ignacio leads engineering teams [confidence: high]",
+    );
 
     const result = await callTool(server.client, "suggest_question", {
       goal: "learn_principles",
@@ -119,7 +117,11 @@ describe("MCP integration", () => {
 
   it("falls back to the bootstrap question when suggest_question receives invalid LLM output", async () => {
     const server = await startTestServer({ responses: ["not json"] });
-    writeMemoryFile(server.memPath, "profile.md", "- Ignacio leads engineering teams [confidence: high]");
+    writeMemoryFile(
+      server.memPath,
+      "profile.md",
+      "- Ignacio leads engineering teams [confidence: high]",
+    );
 
     const result = await callTool(server.client, "suggest_question", {
       goal: "fill_gaps",
@@ -178,9 +180,7 @@ describe("MCP integration", () => {
     const server = await startTestServer({
       responses: [
         JSON.stringify({
-          items: [
-            memoryItem("preference", "Ignacio prefers async written updates."),
-          ],
+          items: [memoryItem("preference", "Ignacio prefers async written updates.")],
         }),
       ],
     });
@@ -250,7 +250,11 @@ describe("MCP integration", () => {
 
   it("returns insufficient memory from ask without calling the LLM", async () => {
     const server = await startTestServer();
-    writeMemoryFile(server.memPath, "profile.md", "- Ignacio leads engineering teams [confidence: high]");
+    writeMemoryFile(
+      server.memPath,
+      "profile.md",
+      "- Ignacio leads engineering teams [confidence: high]",
+    );
 
     const result = await callTool(server.client, "ask", {
       question: "What does Ignacio do?",
@@ -269,9 +273,21 @@ describe("MCP integration", () => {
     const server = await startTestServer({
       responses: ["Ignacio leads engineering teams and prefers direct communication."],
     });
-    writeMemoryFile(server.memPath, "profile.md", "- Ignacio leads engineering teams [confidence: high]");
-    writeMemoryFile(server.memPath, "facts.md", "- Ignacio works on local-first tools [confidence: high]");
-    writeMemoryFile(server.memPath, "preferences.md", "- Ignacio prefers direct communication [confidence: high]");
+    writeMemoryFile(
+      server.memPath,
+      "profile.md",
+      "- Ignacio leads engineering teams [confidence: high]",
+    );
+    writeMemoryFile(
+      server.memPath,
+      "facts.md",
+      "- Ignacio works on local-first tools [confidence: high]",
+    );
+    writeMemoryFile(
+      server.memPath,
+      "preferences.md",
+      "- Ignacio prefers direct communication [confidence: high]",
+    );
 
     const result = await callTool(server.client, "ask", {
       question: "How should I describe Ignacio?",
@@ -296,9 +312,21 @@ describe("MCP integration", () => {
     const server = await startTestServer({
       responses: ["Only public-safe memory was used."],
     });
-    writeMemoryFile(server.memPath, "profile.md", "- Ignacio leads engineering teams [confidence: high]");
-    writeMemoryFile(server.memPath, "facts.md", "- Ignacio works on local-first tools [confidence: high]");
-    writeMemoryFile(server.memPath, "private.md", "- Ignacio has a private compensation target [confidence: high]");
+    writeMemoryFile(
+      server.memPath,
+      "profile.md",
+      "- Ignacio leads engineering teams [confidence: high]",
+    );
+    writeMemoryFile(
+      server.memPath,
+      "facts.md",
+      "- Ignacio works on local-first tools [confidence: high]",
+    );
+    writeMemoryFile(
+      server.memPath,
+      "private.md",
+      "- Ignacio has a private compensation target [confidence: high]",
+    );
 
     await callTool(server.client, "ask", {
       question: "What should the public know?",
@@ -314,9 +342,21 @@ describe("MCP integration", () => {
     const server = await startTestServer({
       responses: ["Inferred: Ignacio would likely prefer a pragmatic technical plan."],
     });
-    writeMemoryFile(server.memPath, "profile.md", "- Ignacio leads engineering teams [confidence: high]");
-    writeMemoryFile(server.memPath, "facts.md", "- Ignacio works on local-first tools [confidence: high]");
-    writeMemoryFile(server.memPath, "preferences.md", "- Ignacio prefers pragmatic technical plans [confidence: high]");
+    writeMemoryFile(
+      server.memPath,
+      "profile.md",
+      "- Ignacio leads engineering teams [confidence: high]",
+    );
+    writeMemoryFile(
+      server.memPath,
+      "facts.md",
+      "- Ignacio works on local-first tools [confidence: high]",
+    );
+    writeMemoryFile(
+      server.memPath,
+      "preferences.md",
+      "- Ignacio prefers pragmatic technical plans [confidence: high]",
+    );
 
     const result = await callTool(server.client, "ask", {
       question: "What would Ignacio think about this plan?",
@@ -335,10 +375,12 @@ describe("MCP integration", () => {
   });
 });
 
-async function startTestServer(options: {
-  responses?: LlmResponse[];
-  config?: Partial<Config>;
-} = {}): Promise<RunningTestServer> {
+async function startTestServer(
+  options: {
+    responses?: LlmResponse[];
+    config?: Partial<Config>;
+  } = {},
+): Promise<RunningTestServer> {
   const memPath = createMemoryDir();
   const llm = new QueueLlmProvider(options.responses);
   const config = makeConfig(memPath, options.config);

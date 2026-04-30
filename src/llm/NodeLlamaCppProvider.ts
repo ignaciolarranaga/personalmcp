@@ -8,7 +8,8 @@ export class NodeLlamaCppProvider implements LlmProvider {
   private defaultTemperature: number;
   private defaultMaxTokens: number;
   private llama: Awaited<ReturnType<typeof getLlama>> | null = null;
-  private model: Awaited<ReturnType<Awaited<ReturnType<typeof getLlama>>["loadModel"]>> | null = null;
+  private model: Awaited<ReturnType<Awaited<ReturnType<typeof getLlama>>["loadModel"]>> | null =
+    null;
 
   constructor(modelPath: string, temperature = 0.2, maxTokens = 1200) {
     this.modelPath = resolve(modelPath);

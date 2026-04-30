@@ -1,0 +1,7 @@
+coverage
+dist
+memory
+memory_backup_*
+models
+node_modules
+package-lock.json

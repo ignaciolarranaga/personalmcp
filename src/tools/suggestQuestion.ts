@@ -1,25 +1,35 @@
 import { buildSuggestSystem, buildSuggestUser } from "../prompts/suggestQuestionPrompt.js";
 import { readAllMemory, countMemoryItems } from "../memory/readMemory.js";
 import type { LlmProvider } from "../llm/LlmProvider.js";
-import type { SuggestQuestionInput, SuggestQuestionOutput, Config, MemoryCategory } from "../types.js";
+import type {
+  SuggestQuestionInput,
+  SuggestQuestionOutput,
+  Config,
+  MemoryCategory,
+} from "../types.js";
 
 const BOOTSTRAP_QUESTION: SuggestQuestionOutput = {
   question:
     "What should I know about who you are, the kind of work you do, and how you would want me to represent you when someone asks about you?",
-  purpose:
-    "Build an initial identity and professional context memory from the owner's own words.",
+  purpose: "Build an initial identity and professional context memory from the owner's own words.",
   expected_memory_categories: ["profile", "fact", "preference", "communication_style"],
   suggested_source_type: "owner_answer",
 };
 
 const VALID_CATEGORIES = new Set<string>([
-  "profile", "fact", "preference", "principle", "opinion", "communication_style", "private",
+  "profile",
+  "fact",
+  "preference",
+  "principle",
+  "opinion",
+  "communication_style",
+  "private",
 ]);
 
 export async function handleSuggestQuestion(
   input: SuggestQuestionInput,
   llm: LlmProvider,
-  config: Config
+  config: Config,
 ): Promise<SuggestQuestionOutput> {
   const memPath = config.memory.path;
   const itemCount = countMemoryItems(memPath);
@@ -65,17 +75,16 @@ function parseSuggestOutput(llmOutput: string): SuggestQuestionOutput | null {
 
   let parsed: RawSuggestOutput;
   try {
-    parsed = JSON.parse(jsonMatch[0]);
+    parsed = JSON.parse(jsonMatch[0]) as RawSuggestOutput;
   } catch {
     return null;
   }
 
   if (!parsed.question?.trim() || !parsed.purpose?.trim()) return null;
 
-  const categories = (parsed.expected_memory_categories ?? [])
-    .filter((c): c is Exclude<MemoryCategory, "ignore"> =>
-      VALID_CATEGORIES.has(c) && c !== "ignore"
-    );
+  const categories = (parsed.expected_memory_categories ?? []).filter(
+    (c): c is Exclude<MemoryCategory, "ignore"> => VALID_CATEGORIES.has(c) && c !== "ignore",
+  );
 
   return {
     question: parsed.question.trim(),

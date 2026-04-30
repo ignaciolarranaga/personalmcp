@@ -13,7 +13,7 @@ import type { IngestInput, IngestOutput, Config } from "../types.js";
 export async function handleIngest(
   input: IngestInput,
   llm: LlmProvider,
-  config: Config
+  config: Config,
 ): Promise<IngestOutput> {
   const warnings: string[] = [];
   const memPath = config.memory.path;
@@ -58,7 +58,7 @@ export async function handleIngest(
 
   if (items.length === 0) {
     warnings.push(
-      "The LLM did not return valid memory items. The content may not contain extractable personal information, or the model output could not be parsed."
+      "The LLM did not return valid memory items. The content may not contain extractable personal information, or the model output could not be parsed.",
     );
     return {
       success: true,
@@ -72,12 +72,10 @@ export async function handleIngest(
 
   // Check for sensitive items and add warnings
   const sensitiveItems = items.filter(
-    (i) => i.sensitivity === "private" || i.sensitivity === "sensitive"
+    (i) => i.sensitivity === "private" || i.sensitivity === "sensitive",
   );
   if (sensitiveItems.length > 0) {
-    warnings.push(
-      `${sensitiveItems.length} sensitive item(s) were stored in private memory.`
-    );
+    warnings.push(`${sensitiveItems.length} sensitive item(s) were stored in private memory.`);
   }
 
   const { added, updated, ignored } = mergeMemoryItems(memPath, items);
@@ -89,7 +87,7 @@ export async function handleIngest(
     input.source_title,
     input.source_type,
     input.source_date,
-    items.map((_, i) => `mem_${contentHash}_${i}`)
+    items.map((_, i) => `mem_${contentHash}_${i}`),
   );
   addSourceRecord(memPath, record);
 
@@ -109,7 +107,7 @@ function buildIngestSummary(
   added: number,
   updated: number,
   ignored: number,
-  title?: string
+  title?: string,
 ): string {
   const source = title ? `"${title}"` : "the provided content";
   const parts: string[] = [];

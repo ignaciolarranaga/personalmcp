@@ -27,9 +27,11 @@ if (!existsSync(MODELS_DIR)) {
 
 try {
   console.error(`[setup-model] Resolving model: ${modelSpec}`);
-  console.error("[setup-model] This may take a while depending on your connection (~2-3 GB download).");
+  console.error(
+    "[setup-model] This may take a while depending on your connection (~2-3 GB download).",
+  );
 
-  const llama = await getLlama();
+  await getLlama();
   const downloadedPath = await resolveModelFile(modelSpec, {
     directory: MODELS_DIR,
     fileName: basename(targetPath),

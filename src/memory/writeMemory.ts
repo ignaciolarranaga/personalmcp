@@ -34,7 +34,7 @@ export function writeMemoryItems(
 
   for (const item of items) {
     if (item.category === "ignore") continue;
-    const cat = item.category as Exclude<MemoryCategory, "ignore">;
+    const cat = item.category;
     if (!byCategory.has(cat)) byCategory.set(cat, []);
     byCategory.get(cat)!.push(item);
   }
