@@ -1,0 +1,19 @@
+{
+  "name": "PersonalMCP",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "postCreateCommand": "npm ci && npm run build",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "PersonalMCP MCP server",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  }
+}
