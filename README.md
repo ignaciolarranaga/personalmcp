@@ -13,7 +13,6 @@ No cloud API required. No database. All memory stored as plain Markdown files.
 - Node.js 18 or later
 - ~3 GB free disk space (for the default model)
 - macOS, Linux, or Windows (Metal/CUDA acceleration detected automatically)
-- Docker, if you want to run PersonalMCP in a container
 
 ---
 
@@ -28,59 +27,6 @@ npm start -- --debug  # optional: logs MCP calls and LLM prompt/output snippets
 ```
 
 Once running, connect your MCP client to `http://localhost:3000/mcp` — see the section below for your client.
-
----
-
-## Docker
-
-The Docker image is intentionally slim. It does not include GGUF model files or private memory, so mount `./models`, `./memory`, and `./config.yaml` when running the container.
-
-Build the local image:
-
-```bash
-docker build -t personalmcp .
-```
-
-Download the default model into your local `./models` directory using the container:
-
-```bash
-docker run --rm \
-  -v "$PWD/models:/app/models" \
-  personalmcp npm run setup:model
-```
-
-Start PersonalMCP:
-
-```bash
-docker run --rm \
-  -p 3000:3000 \
-  -v "$PWD/models:/app/models" \
-  -v "$PWD/memory:/app/memory" \
-  -v "$PWD/config.yaml:/app/config.yaml:ro" \
-  personalmcp
-```
-
-Once running, connect your MCP client to `http://localhost:3000/mcp`.
-
-### Docker Compose
-
-Build and start the service:
-
-```bash
-docker compose up --build
-```
-
-Run model setup through Compose:
-
-```bash
-docker compose run --rm personalmcp npm run setup:model
-```
-
-Stop the service:
-
-```bash
-docker compose down
-```
 
 ---
 
@@ -336,15 +282,12 @@ npm run memory:backup    # copy memory/ to a timestamped backup folder
 
 ## Manual Release
 
-DockerHub publishing is manual. No GitHub Actions publishing workflow or DockerHub secret is required.
-
 1. Verify the local state:
 
 ```bash
 git status
 npm test
 npm run build
-docker build -t personalmcp .
 ```
 
 2. Choose and apply a version bump:
@@ -364,38 +307,18 @@ git push
 git push --tags
 ```
 
-4. Build and tag the release image:
-
-```bash
-VERSION=$(node -p "require('./package.json').version")
-docker build -t personalmcp .
-docker tag personalmcp ignaciolarranaga/personalmcp:$VERSION
-docker tag personalmcp ignaciolarranaga/personalmcp:latest
-```
-
-5. Publish to DockerHub:
-
-```bash
-docker login
-docker push ignaciolarranaga/personalmcp:$VERSION
-docker push ignaciolarranaga/personalmcp:latest
-```
-
-6. Create a GitHub release manually:
+4. Create a GitHub release manually:
 
 - Use the tag `v$VERSION`.
-- Include release notes with Docker image changes, usage notes, and any breaking changes.
+- Include release notes with usage notes and any breaking changes.
 
-7. Smoke test the published image:
+5. Smoke test from source:
 
 ```bash
-docker pull ignaciolarranaga/personalmcp:$VERSION
-docker run --rm \
-  -p 3000:3000 \
-  -v "$PWD/models:/app/models" \
-  -v "$PWD/memory:/app/memory" \
-  -v "$PWD/config.yaml:/app/config.yaml:ro" \
-  ignaciolarranaga/personalmcp:$VERSION
+npm install
+npm run setup:model
+npm run build
+npm start
 ```
 
 Confirm the MCP endpoint works at `http://localhost:3000/mcp` with MCP Inspector or another MCP client.
