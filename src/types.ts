@@ -114,6 +114,9 @@ export interface GenerateOutput {
 }
 
 export interface Config {
+  server?: {
+    port?: number;
+  };
   owner: {
     name: string | null;
     preferred_language: string | null;

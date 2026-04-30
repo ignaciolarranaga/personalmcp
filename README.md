@@ -20,31 +20,51 @@ No cloud API required. No database. All memory stored as plain Markdown files.
 
 ```bash
 npm install
-npm run setup:model   # downloads Qwen3-4B-Instruct-2507 (~2.5 GB)
+npm run setup:model   # downloads Qwen3-4B-Instruct (~2.5 GB)
 npm run build
-npm start
+npm start             # starts the MCP server on http://localhost:3000/mcp
 ```
 
-The server communicates over stdio and is designed to run as an MCP server inside a client like Claude Desktop.
+Once running, connect your MCP client to `http://localhost:3000/mcp` — see the section below for your client.
 
 ---
 
-## Claude Desktop Integration
+## Connecting MCP Clients
 
-Add this to your Claude Desktop MCP config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
   "mcpServers": {
     "personalmcp": {
-      "command": "node",
-      "args": ["/absolute/path/to/personalmcp/dist/index.js"]
+      "type": "http",
+      "url": "http://localhost:3000/mcp"
     }
   }
 }
 ```
 
-Replace `/absolute/path/to/personalmcp` with the actual path to this project.
+Save and restart Claude Desktop. The `personalmcp` server will appear in the tools panel.
+
+### Claude Code (CLI)
+
+```bash
+claude mcp add personalmcp --transport http http://localhost:3000/mcp
+```
+
+The server is now available in all Claude Code sessions. Run `claude mcp list` to confirm.
+
+### OpenAI Codex / ChatGPT Desktop
+
+1. Open **Settings → Tools → Add MCP Server**
+2. Enter the URL: `http://localhost:3000/mcp`
+3. Save — the three PersonalMCP tools will appear immediately
+
+### Any other MCP-compatible client
+
+Use URL `http://localhost:3000/mcp` with transport type **Streamable HTTP**.
 
 ---
 
@@ -127,8 +147,11 @@ You can inspect and edit these files directly. They are human-readable.
 Edit `config.yaml` to change settings:
 
 ```yaml
+server:
+  port: 3000           # HTTP port the MCP server listens on
+
 owner:
-  name: null               # learned through ingestion
+  name: null           # learned through ingestion
   preferred_language: null
 
 llm:
@@ -152,7 +175,7 @@ safety:
 
 ### Default model (recommended)
 
-**Qwen3-4B-Instruct-2507 Q4_K_M** — ~2.5 GB, strong instruction following, multilingual.
+**Qwen3-4B-Instruct Q4_K_M** — ~2.5 GB, strong instruction following, multilingual.
 
 ```bash
 npm run setup:model
@@ -216,7 +239,7 @@ User → Claude Desktop → ask(
 
 ## Security Notes
 
-- The server communicates via stdio only — no network exposure by default.
+- The server listens on `localhost` only — not exposed to the network by default.
 - `private.md` is gitignored. Sensitive memory stays local.
 - Private memory is not exposed when `audience` is `public` or `unknown`.
 - No shell execution tools are exposed through MCP.

@@ -1,10 +1,13 @@
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { createServer as createHttpServer } from "node:http";
+import { randomUUID } from "node:crypto";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { loadConfig } from "./config.js";
 import { NodeLlamaCppProvider } from "./llm/NodeLlamaCppProvider.js";
 import { createServer } from "./server.js";
 
 async function main() {
   const config = loadConfig();
+  const port = config.server?.port ?? 3000;
 
   const llm = new NodeLlamaCppProvider(
     config.llm.model_path,
@@ -14,11 +17,23 @@ async function main() {
 
   await llm.initialize();
 
-  const server = createServer(llm, config);
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  const mcpServer = createServer(llm, config);
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+  });
+  await mcpServer.connect(transport);
 
-  console.error("[PersonalMCP] Server ready. Listening for MCP requests.");
+  const httpServer = createHttpServer(async (req, res) => {
+    if (req.url === "/mcp") {
+      await transport.handleRequest(req, res);
+      return;
+    }
+    res.writeHead(404).end("Not found");
+  });
+
+  httpServer.listen(port, () => {
+    console.error(`[PersonalMCP] Server ready on http://localhost:${port}/mcp`);
+  });
 }
 
 main().catch((err) => {

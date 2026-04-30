@@ -1,3 +1,6 @@
+server:
+  port: 3000
+
 owner:
   name: null
   preferred_language: null
