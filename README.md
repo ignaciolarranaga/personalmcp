@@ -24,6 +24,7 @@ npm install
 npm run setup:model   # downloads Qwen3-4B-Instruct (~2.5 GB)
 npm run build
 npm start             # starts the MCP server on http://localhost:3000/mcp
+npm start -- --debug  # optional: logs MCP calls and LLM prompt/output snippets
 ```
 
 Once running, connect your MCP client to `http://localhost:3000/mcp` — see the section below for your client.
@@ -160,6 +161,12 @@ Start PersonalMCP in one terminal:
 ```bash
 npm run build
 npm start
+```
+
+To include server-side MCP call traces and local LLM prompt/output snippets, start with:
+
+```bash
+npm start -- --debug
 ```
 
 Start the Inspector in another terminal:

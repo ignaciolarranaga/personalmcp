@@ -3,10 +3,24 @@ import { z } from "zod";
 import { handleIngest } from "./tools/ingest.js";
 import { handleAsk } from "./tools/ask.js";
 import { handleSuggestQuestion } from "./tools/suggestQuestion.js";
+import { noopDebugLogger, type DebugLogger } from "./debug.js";
 import type { LlmProvider } from "./llm/LlmProvider.js";
 import type { Config } from "./types.js";
 
-export function createServer(llm: LlmProvider, config: Config): McpServer {
+interface ToolResponse {
+  [key: string]: unknown;
+  content: Array<{ type: "text"; text: string }>;
+  structuredContent?: Record<string, unknown>;
+  isError?: boolean;
+}
+
+type ToolHandler<TArgs> = (args: TArgs) => Promise<ToolResponse>;
+
+export function createServer(
+  llm: LlmProvider,
+  config: Config,
+  debugLogger: DebugLogger = noopDebugLogger,
+): McpServer {
   const server = new McpServer({
     name: "personalmcp",
     version: "0.1.0",
@@ -43,7 +57,7 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
           .describe("Optional instructions for memory extraction, e.g. 'focus on opinions'"),
       }),
     },
-    async (args) => {
+    withDebug(debugLogger, "ingest", async (args) => {
       try {
         const result = await handleIngest(args, llm, config);
         const text = [
@@ -65,7 +79,7 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
           isError: true,
         };
       }
-    },
+    }),
   );
 
   // ── ask ──────────────────────────────────────────────────────────────────────
@@ -94,7 +108,7 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
           .describe("Intended audience — affects whether private memory is included"),
       }),
     },
-    async (args) => {
+    withDebug(debugLogger, "ask", async (args) => {
       try {
         const result = await handleAsk(args, llm, config);
         const text = [
@@ -116,7 +130,7 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
           isError: true,
         };
       }
-    },
+    }),
   );
 
   // ── suggest_question ─────────────────────────────────────────────────────────
@@ -152,7 +166,7 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
           .describe("List of recently asked questions to avoid repetition"),
       }),
     },
-    async (args) => {
+    withDebug(debugLogger, "suggest_question", async (args) => {
       try {
         const result = await handleSuggestQuestion(args, llm, config);
         const text = [
@@ -173,8 +187,44 @@ export function createServer(llm: LlmProvider, config: Config): McpServer {
           isError: true,
         };
       }
-    },
+    }),
   );
 
   return server;
+}
+
+function withDebug<TArgs>(
+  logger: DebugLogger,
+  toolName: string,
+  handler: ToolHandler<TArgs>,
+): ToolHandler<TArgs> {
+  return async (args) => {
+    if (!logger.enabled) return handler(args);
+
+    const startedAt = Date.now();
+    logger.log("mcp.tool.start", {
+      tool: toolName,
+      input: args,
+    });
+
+    try {
+      const result = await handler(args);
+      logger.log("mcp.tool.end", {
+        tool: toolName,
+        status: result.isError ? "error" : "ok",
+        durationMs: Date.now() - startedAt,
+        isError: result.isError ?? false,
+        structuredContent: result.structuredContent,
+      });
+      return result;
+    } catch (err) {
+      logger.log("mcp.tool.error", {
+        tool: toolName,
+        status: "error",
+        durationMs: Date.now() - startedAt,
+        error: err,
+      });
+      throw err;
+    }
+  };
 }

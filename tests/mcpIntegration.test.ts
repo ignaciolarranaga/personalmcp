@@ -9,6 +9,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer } from "../src/server.js";
+import type { DebugLogger } from "../src/debug.js";
 import type { Config, GenerateInput, GenerateOutput } from "../src/types.js";
 import type { LlmProvider } from "../src/llm/LlmProvider.js";
 
@@ -41,6 +42,15 @@ class QueueLlmProvider implements LlmProvider {
     const response = this.responses.shift() ?? "";
     if (response instanceof Error) throw response;
     return { text: typeof response === "function" ? response(input) : response };
+  }
+}
+
+class CapturingDebugLogger implements DebugLogger {
+  readonly enabled = true;
+  readonly events: Array<{ event: string; details?: Record<string, unknown> }> = [];
+
+  log(event: string, details?: Record<string, unknown>): void {
+    this.events.push({ event, details });
   }
 }
 
@@ -373,18 +383,47 @@ describe("MCP integration", () => {
     ]);
     expect(firstText(result)).toContain("Note:");
   });
+
+  it("logs MCP tool calls when debug logging is enabled", async () => {
+    const debugLogger = new CapturingDebugLogger();
+    const server = await startTestServer({ debugLogger });
+
+    await callTool(server.client, "suggest_question", {
+      goal: "build_initial_memory",
+    });
+
+    expect(debugLogger.events).toHaveLength(2);
+    expect(debugLogger.events[0]).toEqual({
+      event: "mcp.tool.start",
+      details: {
+        tool: "suggest_question",
+        input: { goal: "build_initial_memory" },
+      },
+    });
+    expect(debugLogger.events[1].event).toBe("mcp.tool.end");
+    expect(debugLogger.events[1].details).toMatchObject({
+      tool: "suggest_question",
+      status: "ok",
+      isError: false,
+      structuredContent: {
+        suggested_source_type: "owner_answer",
+      },
+    });
+    expect(debugLogger.events[1].details?.durationMs).toEqual(expect.any(Number));
+  });
 });
 
 async function startTestServer(
   options: {
     responses?: LlmResponse[];
     config?: Partial<Config>;
+    debugLogger?: DebugLogger;
   } = {},
 ): Promise<RunningTestServer> {
   const memPath = createMemoryDir();
   const llm = new QueueLlmProvider(options.responses);
   const config = makeConfig(memPath, options.config);
-  const mcpServer = createServer(llm, config);
+  const mcpServer = createServer(llm, config, options.debugLogger);
   const serverTransport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
   });

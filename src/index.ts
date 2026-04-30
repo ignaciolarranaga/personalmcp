@@ -2,10 +2,13 @@ import { createServer as createHttpServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { loadConfig } from "./config.js";
+import { createDebugLogger } from "./debug.js";
 import { NodeLlamaCppProvider } from "./llm/NodeLlamaCppProvider.js";
 import { createServer } from "./server.js";
 
 async function main() {
+  const debugEnabled = process.argv.slice(2).includes("--debug");
+  const debugLogger = createDebugLogger({ enabled: debugEnabled });
   const config = loadConfig();
   const port = config.server?.port ?? 3000;
 
@@ -13,11 +16,12 @@ async function main() {
     config.llm.model_path,
     config.llm.temperature,
     config.llm.max_tokens,
+    debugLogger,
   );
 
   await llm.initialize();
 
-  const mcpServer = createServer(llm, config);
+  const mcpServer = createServer(llm, config, debugLogger);
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
   });
@@ -33,6 +37,9 @@ async function main() {
 
   httpServer.listen(port, () => {
     console.error(`[PersonalMCP] Server ready on http://localhost:${port}/mcp`);
+    if (debugEnabled) {
+      console.error("[PersonalMCP] Debug logging enabled.");
+    }
   });
 }
 
