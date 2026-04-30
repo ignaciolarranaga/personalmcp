@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:node-llama-cpp.withcat.ai)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

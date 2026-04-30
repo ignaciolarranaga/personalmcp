@@ -1,0 +1,27 @@
+{
+  "name": "personalmcp",
+  "version": "0.1.0",
+  "description": "A local-first MCP server that acts as a personal digital twin",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.scripts.json",
+    "dev": "node dist/index.js",
+    "start": "node dist/index.js",
+    "setup:model": "node dist/scripts/setup-model.js",
+    "memory:show": "cat memory/*.md",
+    "memory:reset": "node --input-type=module <<'EOF'\nimport { readdirSync, writeFileSync } from 'fs';\nconst categories = ['profile','facts','preferences','principles','opinions','communication_style','private'];\ncategories.forEach(c => writeFileSync(`memory/${c}.md`, `# ${c.replace('_',' ').replace(/\\b\\w/g, l => l.toUpperCase())}\\n`));\nconsole.log('Memory reset.');\nEOF",
+    "memory:backup": "node --input-type=module <<'EOF'\nimport { cpSync } from 'fs';\nconst ts = new Date().toISOString().slice(0,19).replace(/:/g,'-');\ncpSync('memory', `memory_backup_${ts}`, { recursive: true });\nconsole.log(`Backed up to memory_backup_${ts}`);\nEOF"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "js-yaml": "^4.1.0",
+    "node-llama-cpp": "^3.0.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
