@@ -1,39 +1,62 @@
-import type { MemoryStorage } from "../types.js";
+import type { MemoryDatabase, MemoryKind } from "../types.js";
 
-const MEMORY_FILES: Record<string, string> = {
-  "profile.md": "Profile",
-  "facts.md": "Facts",
-  "preferences.md": "Preferences",
-  "principles.md": "Principles",
-  "opinions.md": "Opinions",
-  "communication_style.md": "Communication Style",
-  "private.md": "Private",
+const KIND_LABEL: Record<MemoryKind, string> = {
+  profile: "Profile",
+  fact: "Facts",
+  preference: "Preferences",
+  principle: "Principles",
+  opinion: "Opinions",
+  communication_style: "Communication Style",
+  private: "Private",
+  decision: "Decisions",
+  instruction: "Instructions",
+  summary: "Summaries",
+  relationship: "Relationships",
 };
 
-export function readAllMemory(storage: MemoryStorage, excludePrivate = false): string {
+const KIND_ORDER: MemoryKind[] = [
+  "profile",
+  "fact",
+  "preference",
+  "principle",
+  "opinion",
+  "communication_style",
+  "decision",
+  "instruction",
+  "relationship",
+  "summary",
+  "private",
+];
+
+function confidenceLabel(score: number): string {
+  if (score >= 0.75) return "high";
+  if (score >= 0.4) return "medium";
+  return "low";
+}
+
+export function readAllMemory(db: MemoryDatabase, excludePrivate = false): string {
+  const excludeVisibility: string[] = excludePrivate ? ["secret"] : [];
+  const records = db.queryRecords({ status: "active", excludeVisibility });
+
+  const byKind = new Map<MemoryKind, string[]>();
+  for (const record of records) {
+    if (!byKind.has(record.kind)) byKind.set(record.kind, []);
+    byKind.get(record.kind)!.push(
+      `- ${record.text} [confidence: ${confidenceLabel(record.confidence)}]`,
+    );
+  }
+
   const parts: string[] = [];
-
-  for (const [filename, label] of Object.entries(MEMORY_FILES)) {
-    if (excludePrivate && filename === "private.md") continue;
-
-    if (!storage.exists(filename)) continue;
-
-    const content = storage.readText(filename).trim();
-    const lines = content.split("\n").filter((l) => l.trim().startsWith("-"));
-    if (lines.length === 0) continue;
-
-    parts.push(`## ${label}\n${lines.join("\n")}`);
+  for (const kind of KIND_ORDER) {
+    if (excludePrivate && kind === "private") continue;
+    const lines = byKind.get(kind);
+    if (!lines || lines.length === 0) continue;
+    parts.push(`## ${KIND_LABEL[kind]}\n${lines.join("\n")}`);
   }
 
   return parts.length > 0 ? parts.join("\n\n") : "";
 }
 
-export function countMemoryItems(storage: MemoryStorage): number {
-  let count = 0;
-  for (const filename of Object.keys(MEMORY_FILES)) {
-    if (!storage.exists(filename)) continue;
-    const content = storage.readText(filename);
-    count += content.split("\n").filter((l) => l.trim().startsWith("-")).length;
-  }
-  return count;
+export function countMemoryItems(db: MemoryDatabase): number {
+  return db.countRecords("active");
 }

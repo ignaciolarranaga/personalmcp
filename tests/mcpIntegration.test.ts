@@ -9,24 +9,14 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer } from "../src/server.js";
-import { createEncryptedMemoryStorage, createPlainMemoryStorage } from "../src/memory/storage.js";
+import { createMemoryDatabase } from "../src/memory/db.js";
 import { initializeMemoryStorage, parseCliOptions } from "../src/memory/unlock.js";
 import { unlockOrCreateVault } from "../src/memory/vault.js";
 import type { DebugLogger } from "../src/debug.js";
-import type { Config, GenerateInput, GenerateOutput } from "../src/types.js";
+import type { Config, GenerateInput, GenerateOutput, MemoryDatabase, MemoryKind } from "../src/types.js";
 import type { LlmProvider } from "../src/llm/LlmProvider.js";
 
 type LlmResponse = string | Error | ((input: GenerateInput) => string);
-
-const MEMORY_FILES: Record<string, string> = {
-  "profile.md": "Profile",
-  "facts.md": "Facts",
-  "preferences.md": "Preferences",
-  "principles.md": "Principles",
-  "opinions.md": "Opinions",
-  "communication_style.md": "Communication Style",
-  "private.md": "Private",
-};
 
 class QueueLlmProvider implements LlmProvider {
   readonly calls: GenerateInput[] = [];
@@ -61,6 +51,7 @@ interface RunningTestServer {
   client: Client;
   llm: QueueLlmProvider;
   memPath: string;
+  db: MemoryDatabase;
   close: () => Promise<void>;
 }
 
@@ -106,11 +97,7 @@ describe("MCP integration", () => {
         }),
       ],
     });
-    writeMemoryFile(
-      server.memPath,
-      "profile.md",
-      "- Ignacio leads engineering teams [confidence: high]",
-    );
+    writeMemoryRecord(server.db, "profile", "Ignacio leads engineering teams", 0.9);
 
     const result = await callTool(server.client, "suggest_question", {
       goal: "learn_principles",
@@ -130,11 +117,7 @@ describe("MCP integration", () => {
 
   it("falls back to the bootstrap question when suggest_question receives invalid LLM output", async () => {
     const server = await startTestServer({ responses: ["not json"] });
-    writeMemoryFile(
-      server.memPath,
-      "profile.md",
-      "- Ignacio leads engineering teams [confidence: high]",
-    );
+    writeMemoryRecord(server.db, "profile", "Ignacio leads engineering teams", 0.9);
 
     const result = await callTool(server.client, "suggest_question", {
       goal: "fill_gaps",
@@ -168,17 +151,17 @@ describe("MCP integration", () => {
       memory_items_updated: 0,
       ignored_items: 0,
     });
-    expect(readMemoryFile(server.memPath, "profile.md")).toContain(
-      "- Ignacio leads engineering and product teams. [confidence: high]",
-    );
-    expect(readMemoryFile(server.memPath, "preferences.md")).toContain(
-      "- Ignacio prefers concise engineering communication. [confidence: high]",
-    );
-    expect(readMemoryFile(server.memPath, "communication_style.md")).toContain(
-      "- Ignacio communicates directly and pragmatically. [confidence: high]",
-    );
 
-    const sources = readSources(server.memPath);
+    const profileRecords = server.db.queryRecords({ status: "active", kind: ["profile"] });
+    expect(profileRecords.some((r) => r.text.includes("Ignacio leads engineering and product teams."))).toBe(true);
+
+    const prefRecords = server.db.queryRecords({ status: "active", kind: ["preference"] });
+    expect(prefRecords.some((r) => r.text.includes("Ignacio prefers concise engineering communication."))).toBe(true);
+
+    const styleRecords = server.db.queryRecords({ status: "active", kind: ["communication_style"] });
+    expect(styleRecords.some((r) => r.text.includes("Ignacio communicates directly and pragmatically."))).toBe(true);
+
+    const sources = server.db.listSources();
     expect(sources).toHaveLength(1);
     expect(sources[0]).toMatchObject({
       title: "Initial owner answer",
@@ -218,8 +201,10 @@ describe("MCP integration", () => {
     });
     expect(firstText(second)).toContain("duplicate content hash");
     expect(server.llm.calls).toHaveLength(1);
-    expect(readSources(server.memPath)).toHaveLength(1);
-    expect(readMemoryFile(server.memPath, "preferences.md").match(/^- /gm)).toHaveLength(1);
+    expect(server.db.listSources()).toHaveLength(1);
+
+    const prefRecords = server.db.queryRecords({ status: "active", kind: ["preference"] });
+    expect(prefRecords).toHaveLength(1);
   });
 
   it("returns a successful no-op with warnings when ingest extraction output is malformed", async () => {
@@ -239,7 +224,7 @@ describe("MCP integration", () => {
     expect(result.structuredContent?.warnings).toEqual(
       expect.arrayContaining([expect.stringContaining("did not return valid memory items")]),
     );
-    expect(existsSync(join(server.memPath, "sources.json"))).toBe(false);
+    expect(server.db.listSources()).toHaveLength(0);
   });
 
   it("returns an ingest failure response when the LLM fails", async () => {
@@ -263,11 +248,7 @@ describe("MCP integration", () => {
 
   it("returns insufficient memory from ask without calling the LLM", async () => {
     const server = await startTestServer();
-    writeMemoryFile(
-      server.memPath,
-      "profile.md",
-      "- Ignacio leads engineering teams [confidence: high]",
-    );
+    writeMemoryRecord(server.db, "profile", "Ignacio leads engineering teams", 0.9);
 
     const result = await callTool(server.client, "ask", {
       question: "What does Ignacio do?",
@@ -286,21 +267,9 @@ describe("MCP integration", () => {
     const server = await startTestServer({
       responses: ["Ignacio leads engineering teams and prefers direct communication."],
     });
-    writeMemoryFile(
-      server.memPath,
-      "profile.md",
-      "- Ignacio leads engineering teams [confidence: high]",
-    );
-    writeMemoryFile(
-      server.memPath,
-      "facts.md",
-      "- Ignacio works on local-first tools [confidence: high]",
-    );
-    writeMemoryFile(
-      server.memPath,
-      "preferences.md",
-      "- Ignacio prefers direct communication [confidence: high]",
-    );
+    writeMemoryRecord(server.db, "profile", "Ignacio leads engineering teams", 0.9);
+    writeMemoryRecord(server.db, "fact", "Ignacio works on local-first tools", 0.9);
+    writeMemoryRecord(server.db, "preference", "Ignacio prefers direct communication", 0.9);
 
     const result = await callTool(server.client, "ask", {
       question: "How should I describe Ignacio?",
@@ -325,21 +294,9 @@ describe("MCP integration", () => {
     const server = await startTestServer({
       responses: ["Only public-safe memory was used."],
     });
-    writeMemoryFile(
-      server.memPath,
-      "profile.md",
-      "- Ignacio leads engineering teams [confidence: high]",
-    );
-    writeMemoryFile(
-      server.memPath,
-      "facts.md",
-      "- Ignacio works on local-first tools [confidence: high]",
-    );
-    writeMemoryFile(
-      server.memPath,
-      "private.md",
-      "- Ignacio has a private compensation target [confidence: high]",
-    );
+    writeMemoryRecord(server.db, "profile", "Ignacio leads engineering teams", 0.9);
+    writeMemoryRecord(server.db, "fact", "Ignacio works on local-first tools", 0.9);
+    writeMemoryRecord(server.db, "private", "Ignacio has a private compensation target", 0.9, "secret");
 
     await callTool(server.client, "ask", {
       question: "What should the public know?",
@@ -355,21 +312,9 @@ describe("MCP integration", () => {
     const server = await startTestServer({
       responses: ["Inferred: Ignacio would likely prefer a pragmatic technical plan."],
     });
-    writeMemoryFile(
-      server.memPath,
-      "profile.md",
-      "- Ignacio leads engineering teams [confidence: high]",
-    );
-    writeMemoryFile(
-      server.memPath,
-      "facts.md",
-      "- Ignacio works on local-first tools [confidence: high]",
-    );
-    writeMemoryFile(
-      server.memPath,
-      "preferences.md",
-      "- Ignacio prefers pragmatic technical plans [confidence: high]",
-    );
+    writeMemoryRecord(server.db, "profile", "Ignacio leads engineering teams", 0.9);
+    writeMemoryRecord(server.db, "fact", "Ignacio works on local-first tools", 0.9);
+    writeMemoryRecord(server.db, "preference", "Ignacio prefers pragmatic technical plans", 0.9);
 
     const result = await callTool(server.client, "ask", {
       question: "What would Ignacio think about this plan?",
@@ -430,7 +375,8 @@ describe("MCP integration", () => {
       await initializeMemoryStorage(config, parseCliOptions([]));
 
       expect(existsSync(join(memPath, "vault.json"))).toBe(true);
-      expect(config.memory.storage?.exists("profile.md")).toBe(false);
+      expect(config.memory.storage).toBeDefined();
+      expect(config.memory.storage?.countRecords()).toBe(0);
     } finally {
       if (originalPassword === undefined) delete process.env.PERSONALMCP_PASSWORD;
       else process.env.PERSONALMCP_PASSWORD = originalPassword;
@@ -465,15 +411,15 @@ describe("MCP integration", () => {
   it("ingests and asks through encrypted memory without storing plaintext on disk", async () => {
     const memPath = mkdtempSync(join(tmpdir(), "personalmcp-encrypted-mcp-"));
     const vault = unlockOrCreateVault(memPath, "vault password");
-    const storage = createEncryptedMemoryStorage(memPath, vault.key);
+    const db = createMemoryDatabase({ memPath, key: vault.key, mode: "encrypted" });
     const server = await startTestServer({
       memPath,
-      skipMemorySkeletons: true,
+      db,
       config: {
         memory: {
           path: memPath,
           mode: "encrypted",
-          storage,
+          storage: db,
         },
       },
       responses: [
@@ -492,9 +438,10 @@ describe("MCP integration", () => {
       content: "I lead engineering teams and work on encrypted local memory.",
       source_type: "owner_answer",
     });
-    const rawProfile = readFileSync(join(memPath, "profile.md.enc"), "utf-8");
-    expect(rawProfile).not.toContain("Ignacio leads engineering teams");
-    expect(existsSync(join(memPath, "profile.md"))).toBe(false);
+
+    const rawDb = readFileSync(join(memPath, "memory.db.enc"), "utf-8");
+    expect(rawDb).not.toContain("Ignacio leads engineering teams");
+    expect(existsSync(join(memPath, "memory.db"))).toBe(false);
 
     const result = await callTool(server.client, "ask", {
       question: "What does Ignacio work on?",
@@ -511,12 +458,13 @@ async function startTestServer(
     config?: Partial<Config>;
     debugLogger?: DebugLogger;
     memPath?: string;
-    skipMemorySkeletons?: boolean;
+    db?: MemoryDatabase;
   } = {},
 ): Promise<RunningTestServer> {
-  const memPath = options.memPath ?? createMemoryDir(options.skipMemorySkeletons);
+  const memPath = options.memPath ?? mkdtempSync(join(tmpdir(), "personalmcp-test-"));
+  const db = options.db ?? createMemoryDatabase({ memPath, mode: "plain" });
   const llm = new QueueLlmProvider(options.responses);
-  const config = makeConfig(memPath, options.config);
+  const config = makeConfig(memPath, { ...options.config, memory: { path: memPath, mode: "plain", storage: db, ...options.config?.memory } });
   const mcpServer = createServer(llm, config, options.debugLogger);
   const serverTransport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
@@ -543,6 +491,7 @@ async function startTestServer(
     client,
     llm,
     memPath,
+    db,
     close: async () => {
       await client.close();
       await mcpServer.close();
@@ -554,16 +503,8 @@ async function startTestServer(
   return runningServer;
 }
 
-function createMemoryDir(skipSkeletons = false): string {
-  const memPath = mkdtempSync(join(tmpdir(), "personalmcp-test-"));
-  if (skipSkeletons) return memPath;
-  for (const [filename, heading] of Object.entries(MEMORY_FILES)) {
-    writeFileSync(join(memPath, filename), `# ${heading}\n`, "utf-8");
-  }
-  return memPath;
-}
-
 function makeConfig(memPath: string, overrides: Partial<Config> = {}): Config {
+  const db = overrides.memory?.storage ?? createMemoryDatabase({ memPath, mode: "plain" });
   return {
     server: { port: 0 },
     owner: {
@@ -582,7 +523,7 @@ function makeConfig(memPath: string, overrides: Partial<Config> = {}): Config {
     memory: {
       path: memPath,
       mode: "plain",
-      storage: createPlainMemoryStorage(memPath),
+      storage: db,
       ...overrides.memory,
     },
     safety: {
@@ -647,17 +588,24 @@ function memoryItem(category: string, content: string) {
   };
 }
 
-function writeMemoryFile(memPath: string, filename: string, body: string): void {
-  const heading = MEMORY_FILES[filename] ?? filename.replace(/\.md$/, "");
-  writeFileSync(join(memPath, filename), `# ${heading}\n${body}\n`, "utf-8");
-}
-
-function readMemoryFile(memPath: string, filename: string): string {
-  return readFileSync(join(memPath, filename), "utf-8");
-}
-
-function readSources(memPath: string): Array<Record<string, unknown>> {
-  return JSON.parse(readFileSync(join(memPath, "sources.json"), "utf-8")) as Array<
-    Record<string, unknown>
-  >;
+function writeMemoryRecord(
+  db: MemoryDatabase,
+  kind: MemoryKind,
+  text: string,
+  confidence: number,
+  visibility: "normal" | "sensitive" | "secret" = "normal",
+): void {
+  const now = new Date().toISOString();
+  db.insertRecord({
+    id: `mem_test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    kind,
+    text,
+    tags: [],
+    confidence,
+    importance: 0.5,
+    status: "active",
+    visibility,
+    created_at: now,
+    updated_at: now,
+  });
 }

@@ -1,6 +1,6 @@
 import { buildChatSystem, buildChatUser } from "../prompts/chatPrompt.js";
 import { readAllMemory, countMemoryItems } from "../memory/readMemory.js";
-import { requireMemoryStorage } from "../memory/storage.js";
+import { requireMemoryDatabase } from "../memory/storage.js";
 import type { LlmProvider } from "../llm/LlmProvider.js";
 import type { AskInput, AskOutput, Config, Confidence, Authority } from "../types.js";
 
@@ -11,14 +11,14 @@ export async function handleAsk(
   llm: LlmProvider,
   config: Config,
 ): Promise<AskOutput> {
-  const storage = requireMemoryStorage(config);
+  const db = requireMemoryDatabase(config);
   const mode = input.mode ?? "about_owner";
   const audience = input.audience ?? "unknown";
   const excludePrivate =
     !config.safety.public_can_access_private_memory &&
     (audience === "public" || audience === "unknown");
 
-  const itemCount = countMemoryItems(storage);
+  const itemCount = countMemoryItems(db);
   if (itemCount < INSUFFICIENT_MEMORY_THRESHOLD) {
     return {
       answer:
@@ -30,7 +30,7 @@ export async function handleAsk(
     };
   }
 
-  const memory = readAllMemory(storage, excludePrivate);
+  const memory = readAllMemory(db, excludePrivate);
   const system = buildChatSystem(memory, mode, config.safety);
   const prompt = buildChatUser(input.question, input.context);
 

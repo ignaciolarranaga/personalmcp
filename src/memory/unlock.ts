@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Writable } from "node:stream";
 import { createInterface } from "node:readline";
-import { createEncryptedMemoryStorage, createPlainMemoryStorage } from "./storage.js";
+import { createMemoryDatabase } from "./db.js";
 import { hasVault, unlockOrCreateVault } from "./vault.js";
 import type { Config } from "../types.js";
 
@@ -41,14 +41,19 @@ export function parseCliOptions(argv: string[]): CliOptions {
 
 export async function initializeMemoryStorage(config: Config, options: CliOptions): Promise<void> {
   const mode = config.memory.mode ?? "encrypted";
+
   if (mode === "plain") {
-    config.memory.storage = createPlainMemoryStorage(config.memory.path);
+    config.memory.storage = createMemoryDatabase({ memPath: config.memory.path, mode: "plain" });
     return;
   }
 
   const password = await resolvePassword(config.memory.path, options);
   const vault = unlockOrCreateVault(config.memory.path, password);
-  config.memory.storage = createEncryptedMemoryStorage(config.memory.path, vault.key);
+  config.memory.storage = createMemoryDatabase({
+    memPath: config.memory.path,
+    key: vault.key,
+    mode: "encrypted",
+  });
 
   if (vault.created) {
     console.error(`[PersonalMCP] Initialized encrypted memory vault at ${vault.metadataPath}`);

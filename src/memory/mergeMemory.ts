@@ -1,33 +1,20 @@
 import { writeMemoryItems } from "./writeMemory.js";
-import type { MemoryItem, MergeResult, MemoryStorage } from "../types.js";
+import type { MemoryItem, MergeResult, MemoryDatabase } from "../types.js";
 
-function readExistingLines(storage: MemoryStorage): string[] {
-  const filenames = [
-    "profile.md", "facts.md", "preferences.md", "principles.md",
-    "opinions.md", "communication_style.md", "private.md",
-  ];
-  const lines: string[] = [];
-  for (const f of filenames) {
-    if (!storage.exists(f)) continue;
-    const content = storage.readText(f);
-    for (const line of content.split("\n")) {
-      if (line.trim().startsWith("- ")) {
-        lines.push(line.trim().replace(/^- /, "").replace(/\s*\[confidence:.*\]$/, "").toLowerCase());
-      }
-    }
-  }
-  return lines;
-}
-
-function isDuplicate(item: MemoryItem, existingLines: string[]): boolean {
+function isDuplicate(db: MemoryDatabase, item: MemoryItem): boolean {
   const key = item.content.toLowerCase().slice(0, 80);
-  return existingLines.some(
-    (line) => line.includes(key) || key.includes(line.slice(0, 80))
-  );
+  const results = db.searchRecords(item.content.slice(0, 80), 5);
+  return results.some((r) => {
+    const existing = r.text.toLowerCase();
+    return existing.includes(key) || key.includes(existing.slice(0, 80));
+  });
 }
 
-export function mergeMemoryItems(storage: MemoryStorage, newItems: MemoryItem[]): MergeResult {
-  const existing = readExistingLines(storage);
+export function mergeMemoryItems(
+  db: MemoryDatabase,
+  newItems: MemoryItem[],
+  sourceId?: string,
+): MergeResult {
   const toWrite: MemoryItem[] = [];
   let added = 0;
   let updated = 0;
@@ -42,7 +29,7 @@ export function mergeMemoryItems(storage: MemoryStorage, newItems: MemoryItem[])
     if (item.update_type === "update") {
       toWrite.push(item);
       updated++;
-    } else if (isDuplicate(item, existing)) {
+    } else if (isDuplicate(db, item)) {
       ignored++;
     } else {
       toWrite.push({ ...item, update_type: "add" });
@@ -50,6 +37,6 @@ export function mergeMemoryItems(storage: MemoryStorage, newItems: MemoryItem[])
     }
   }
 
-  writeMemoryItems(storage, toWrite);
+  writeMemoryItems(db, toWrite, sourceId);
   return { added, updated, ignored };
 }

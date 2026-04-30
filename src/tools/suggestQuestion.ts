@@ -1,6 +1,6 @@
 import { buildSuggestSystem, buildSuggestUser } from "../prompts/suggestQuestionPrompt.js";
 import { readAllMemory, countMemoryItems } from "../memory/readMemory.js";
-import { requireMemoryStorage } from "../memory/storage.js";
+import { requireMemoryDatabase } from "../memory/storage.js";
 import type { LlmProvider } from "../llm/LlmProvider.js";
 import type {
   SuggestQuestionInput,
@@ -32,15 +32,15 @@ export async function handleSuggestQuestion(
   llm: LlmProvider,
   config: Config,
 ): Promise<SuggestQuestionOutput> {
-  const storage = requireMemoryStorage(config);
-  const itemCount = countMemoryItems(storage);
+  const db = requireMemoryDatabase(config);
+  const itemCount = countMemoryItems(db);
 
   // Use hardcoded bootstrap when memory is empty
   if (itemCount === 0 && (!input.goal || input.goal === "build_initial_memory")) {
     return BOOTSTRAP_QUESTION;
   }
 
-  const memory = readAllMemory(storage, true);
+  const memory = readAllMemory(db, true);
   const system = buildSuggestSystem(memory);
   const prompt = buildSuggestUser(input.goal, input.topic, input.previous_questions);
 

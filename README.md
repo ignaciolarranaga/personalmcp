@@ -4,7 +4,7 @@ A local-first MCP server that acts as your personal digital twin.
 
 Feed it transcripts, notes, and documents. It extracts durable memory locally using a GGUF model. Any MCP-compatible client can then ask it questions about you or draft responses in your voice.
 
-No cloud API required. No database. Memory is encrypted on disk by default.
+No cloud API required. Memory is stored in an encrypted SQLite database on disk.
 
 ---
 
@@ -13,6 +13,7 @@ No cloud API required. No database. Memory is encrypted on disk by default.
 - Node.js 18 or later
 - ~3 GB free disk space (for the default model)
 - macOS, Linux, or Windows (Metal/CUDA acceleration detected automatically)
+- **C++ build tools** for the SQLite native addon — on macOS, run `xcode-select --install`
 
 ---
 
@@ -198,27 +199,41 @@ Start with `suggest_question` if you have no memory yet. The tool will suggest w
 
 ---
 
-## Memory Files
+## Memory Storage
 
-Memory is encrypted by default in `./memory/`. The first startup creates `vault.json`, then memory
-files are created on first write:
+Memory is stored in an encrypted SQLite database in `./memory/`. The first startup creates
+`vault.json` and `memory.db.enc`:
 
 ```
 memory/
-  vault.json                 — vault metadata and password verification data, not the password
-  profile.md.enc             — identity, name, role
-  facts.md.enc               — work history, projects, skills
-  preferences.md.enc         — communication, work, technology preferences
-  principles.md.enc          — decision-making heuristics, beliefs
-  opinions.md.enc            — views on specific topics
-  communication_style.md.enc — how the owner writes and communicates
-  private.md.enc             — sensitive information
-  sources.json.enc           — index of ingested sources
+  vault.json      — vault metadata and password verification data (not the password itself)
+  memory.db.enc   — AES-256-GCM encrypted SQLite database
 ```
 
-Use `memory.mode: plain` only for local testing/debugging. In plain mode, PersonalMCP uses the
-same filenames without `.enc` and stores human-readable Markdown/JSON. Existing plaintext memory is
-not migrated automatically in this version.
+The database holds structured records with fields for kind, text, tags, confidence, importance,
+status, and visibility. An FTS5 index enables fast full-text search for deduplication and future
+retrieval ranking. A `sources` table tracks every ingested document to prevent duplicate ingestion.
+
+In plain mode (`memory.mode: plain`), the database is stored as `memory.db` (unencrypted, on-disk
+SQLite). Use plain mode only for local testing and debugging.
+
+### Inspecting and exporting memory
+
+Because memory lives in a binary database rather than readable files, use the memory CLI:
+
+```bash
+# Export all active records to Markdown (stdout)
+npm run memory -- export
+
+# Export as JSON Lines
+npm run memory -- export --format=jsonl
+
+# Import from a previously exported Markdown file
+npm run memory -- import memory-backup.md
+
+# Supply the memory password non-interactively when exporting
+npm run memory -- export --password-file ./local-password-file
+```
 
 ---
 

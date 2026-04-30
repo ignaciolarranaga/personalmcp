@@ -1,3 +1,16 @@
+export type MemoryKind =
+  | "profile"
+  | "fact"
+  | "preference"
+  | "principle"
+  | "opinion"
+  | "communication_style"
+  | "private"
+  | "decision"
+  | "instruction"
+  | "summary"
+  | "relationship";
+
 export type MemoryCategory =
   | "profile"
   | "fact"
@@ -22,6 +35,42 @@ export interface MemoryItem {
   update_type: UpdateType;
 }
 
+export interface MemoryRecord {
+  id: string;
+  kind: MemoryKind;
+  text: string;
+  subject?: string;
+  predicate?: string;
+  value?: string;
+  tags: string[];
+  confidence: number;
+  importance: number;
+  source_id?: string;
+  status: "active" | "archived" | "superseded" | "disputed";
+  visibility: "normal" | "sensitive" | "secret";
+  created_at: string;
+  updated_at: string;
+  last_used_at?: string;
+  supersedes?: string[];
+}
+
+export interface MemoryDatabase {
+  insertRecord(record: MemoryRecord): void;
+  updateRecord(id: string, updates: Partial<MemoryRecord>): void;
+  queryRecords(filters?: {
+    status?: string;
+    excludeVisibility?: string[];
+    kind?: string[];
+  }): MemoryRecord[];
+  searchRecords(query: string, limit?: number): MemoryRecord[];
+  getRecordById(id: string): MemoryRecord | null;
+  countRecords(status?: string): number;
+  getSourceByHash(hash: string): SourceRecord | null;
+  insertSource(record: SourceRecord): void;
+  listSources(): SourceRecord[];
+  persist(): void;
+}
+
 export type SourceType =
   | "owner_answer"
   | "chat_transcript"
@@ -39,7 +88,7 @@ export interface SourceRecord {
   date?: string;
   created_at: string;
   content_hash: string;
-  memory_items: string[];
+  memory_item_ids: string[];
 }
 
 export interface IngestInput {
@@ -131,20 +180,13 @@ export interface Config {
   memory: {
     path: string;
     mode?: "encrypted" | "plain";
-    storage?: MemoryStorage;
+    storage?: MemoryDatabase;
   };
   safety: {
     allow_first_person: boolean;
     public_can_access_private_memory: boolean;
     require_disclaimer_for_inferred_answers: boolean;
   };
-}
-
-export interface MemoryStorage {
-  exists(filename: string): boolean;
-  readText(filename: string): string;
-  writeText(filename: string, content: string): void;
-  rawPath(filename: string): string;
 }
 
 export interface MergeResult {

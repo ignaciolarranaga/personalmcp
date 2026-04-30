@@ -1,88 +1,74 @@
-import type { MemoryItem, MemoryCategory, MemoryStorage } from "../types.js";
+import { randomBytes } from "node:crypto";
+import type { MemoryItem, MemoryRecord, MemoryDatabase, MemoryKind, Sensitivity } from "../types.js";
 
-const CATEGORY_FILE: Record<Exclude<MemoryCategory, "ignore">, string> = {
-  profile: "profile.md",
-  fact: "facts.md",
-  preference: "preferences.md",
-  principle: "principles.md",
-  opinion: "opinions.md",
-  communication_style: "communication_style.md",
-  private: "private.md",
+const CONFIDENCE_MAP: Record<string, number> = {
+  low: 0.25,
+  medium: 0.5,
+  high: 0.9,
 };
 
-const CATEGORY_HEADING: Record<Exclude<MemoryCategory, "ignore">, string> = {
-  profile: "Profile",
-  fact: "Facts",
-  preference: "Preferences",
-  principle: "Principles",
-  opinion: "Opinions",
-  communication_style: "Communication Style",
-  private: "Private",
+const VISIBILITY_MAP: Record<Sensitivity, MemoryRecord["visibility"]> = {
+  public: "normal",
+  personal: "sensitive",
+  private: "secret",
+  sensitive: "secret",
 };
 
-function formatItem(item: MemoryItem): string {
-  return `- ${item.content} [confidence: ${item.confidence}]`;
+function generateId(): string {
+  return `mem_${Date.now()}_${randomBytes(3).toString("hex")}`;
+}
+
+function itemToRecord(item: MemoryItem, sourceId?: string): MemoryRecord {
+  const now = new Date().toISOString();
+  return {
+    id: item.id ?? generateId(),
+    kind: item.category as MemoryKind,
+    text: item.content,
+    tags: [],
+    confidence: CONFIDENCE_MAP[item.confidence] ?? 0.5,
+    importance: 0.5,
+    source_id: sourceId,
+    status: "active",
+    visibility: VISIBILITY_MAP[item.sensitivity] ?? "normal",
+    created_at: now,
+    updated_at: now,
+  };
 }
 
 export function writeMemoryItems(
-  storage: MemoryStorage,
-  items: MemoryItem[]
+  db: MemoryDatabase,
+  items: MemoryItem[],
+  sourceId?: string,
 ): { written: number } {
-  const byCategory = new Map<Exclude<MemoryCategory, "ignore">, MemoryItem[]>();
-
-  for (const item of items) {
-    if (item.category === "ignore") continue;
-    const cat = item.category;
-    if (!byCategory.has(cat)) byCategory.set(cat, []);
-    byCategory.get(cat)!.push(item);
-  }
-
   let written = 0;
 
-  for (const [cat, catItems] of byCategory) {
-    const filename = CATEGORY_FILE[cat];
-    const heading = `# ${CATEGORY_HEADING[cat]}`;
+  for (const item of items) {
+    if (item.update_type === "ignore" || item.category === "ignore") continue;
 
-    let content = storage.exists(filename) ? storage.readText(filename) : `${heading}\n`;
+    if (item.update_type === "update") {
+      const key = item.content.toLowerCase().slice(0, 60);
+      const existing = db.queryRecords({ status: "active", kind: [item.category as MemoryKind] });
+      const match = existing.find((r) => {
+        const t = r.text.toLowerCase();
+        return t.includes(key) || key.includes(t.slice(0, 60));
+      });
 
-    for (const item of catItems) {
-      if (item.update_type === "ignore") continue;
-
-      const newLine = formatItem(item);
-
-      if (item.update_type === "update") {
-        // Replace the first line that contains the same content prefix
-        const lines = content.split("\n");
-        let replaced = false;
-        const updated = lines.map((line) => {
-          if (!replaced && line.startsWith("- ") && lineMatchesItem(line, item)) {
-            replaced = true;
-            return newLine;
-          }
-          return line;
+      if (match) {
+        db.updateRecord(match.id, {
+          text: item.content,
+          confidence: CONFIDENCE_MAP[item.confidence] ?? match.confidence,
+          updated_at: new Date().toISOString(),
         });
-        if (replaced) {
-          content = updated.join("\n");
-        } else {
-          content = content.trimEnd() + "\n" + newLine + "\n";
-        }
       } else {
-        content = content.trimEnd() + "\n" + newLine + "\n";
+        db.insertRecord(itemToRecord(item, sourceId));
       }
-
-      written++;
+    } else {
+      db.insertRecord(itemToRecord(item, sourceId));
     }
 
-    storage.writeText(filename, content);
+    written++;
   }
 
+  db.persist();
   return { written };
-}
-
-function lineMatchesItem(line: string, item: MemoryItem): boolean {
-  const lineContent = line.replace(/^- /, "").replace(/\s*\[confidence:.*\]$/, "").toLowerCase();
-  const itemContent = item.content.toLowerCase();
-  // Match if either contains the other (first ~60 chars)
-  const key = itemContent.slice(0, 60);
-  return lineContent.includes(key) || key.includes(lineContent.slice(0, 60));
 }
