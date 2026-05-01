@@ -7,7 +7,7 @@ import { loadConfig } from "../src/config.js";
 describe("config", () => {
   it("uses built-in defaults when config.yaml is not present", () => {
     const originalCwd = process.cwd();
-    const tempDir = mkdtempSync(join(tmpdir(), "personalmcp-config-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "aiprofile-config-"));
 
     try {
       process.chdir(tempDir);

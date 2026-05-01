@@ -30,7 +30,7 @@ export function createCliProgram(handlers: CliHandlers): Command {
   const program = new Command();
 
   program
-    .name("personalmcp")
+    .name("aiprofile")
     .description("A local-first MCP server that acts as your personal digital twin")
     .version("0.1.0")
     .showHelpAfterError()
@@ -38,7 +38,7 @@ export function createCliProgram(handlers: CliHandlers): Command {
 
   program
     .command("serve")
-    .description("Start the PersonalMCP HTTP server")
+    .description("Start the AIProfile HTTP server")
     .option("--debug", "Enable debug logging")
     .option("--password-file <path>", "Read memory password from file")
     .action(async (options: CommanderCommonOptions) => {

@@ -402,7 +402,7 @@ export async function setupModel(options: SetupModelOptions): Promise<void> {
   }
 
   console.error(`[setup-model] Model ready at ${modelPath}`);
-  console.error("[setup-model] You can now run: personalmcp serve");
+  console.error("[setup-model] You can now run: aiprofile serve");
 }
 
 export function selectModel(model?: string): ModelSelection {
@@ -515,7 +515,7 @@ export async function detectHardwareProfile(): Promise<HardwareProfile> {
 }
 
 export function printModelRecommendations(hardware: HardwareProfile): void {
-  console.log("Curated GGUF models for PersonalMCP");
+  console.log("Curated GGUF models for AIProfile");
   console.log(
     `Detected memory: ${formatGb(hardware.totalRamGb)} RAM total, ${formatGb(
       hardware.freeRamGb,
@@ -562,7 +562,7 @@ export function printModelRecommendations(hardware: HardwareProfile): void {
     if (model.notes) {
       console.log(`  Note: ${model.notes}`);
     }
-    console.log(`  Command: personalmcp setup-model --model ${model.id}`);
+    console.log(`  Command: aiprofile setup-model --model ${model.id}`);
     console.log("");
   }
 }
@@ -695,7 +695,7 @@ function printManualDownloadInstructions(selection: ModelSelection): void {
     console.error(`2. Save it under: ${MODELS_DIR}`);
   }
 
-  console.error(`${nextStep}. Run: personalmcp setup-model --list-models for supported examples`);
+  console.error(`${nextStep}. Run: aiprofile setup-model --list-models for supported examples`);
   console.error("-".repeat(60));
 }
 

@@ -20,7 +20,7 @@ describe("CLI", () => {
 
     await runCliProgram(program, []);
 
-    expect(output()).toContain("Usage: personalmcp");
+    expect(output()).toContain("Usage: aiprofile");
     expect(output()).toContain("Commands:");
   });
 

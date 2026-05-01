@@ -26,10 +26,10 @@ export class NodeLlamaCppProvider implements LlmProvider {
   }
 
   async initialize(): Promise<void> {
-    console.error(`[PersonalMCP] Loading model from ${this.modelPath}...`);
+    console.error(`[AIProfile] Loading model from ${this.modelPath}...`);
     this.llama = await getLlama();
     this.model = await this.llama.loadModel({ modelPath: this.modelPath });
-    console.error("[PersonalMCP] Model loaded.");
+    console.error("[AIProfile] Model loaded.");
   }
 
   async generate(input: GenerateInput): Promise<GenerateOutput> {

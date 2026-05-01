@@ -11,7 +11,7 @@ const SCRYPT_PARAMS = {
   r: 8,
   p: 1,
 };
-const VERIFICATION_TEXT = "personalmcp-vault-verification";
+const VERIFICATION_TEXT = "aiprofile-vault-verification";
 
 export interface Vault {
   key: Buffer;

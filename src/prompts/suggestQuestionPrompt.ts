@@ -19,7 +19,7 @@ export function buildSuggestSystem(memory: string): string {
     ? `\nExisting memory:\n---\n${memory}\n---\n`
     : "\nExisting memory: [empty — no memory stored yet]\n";
 
-  return `You are PersonalMCP, a local digital twin assistant.
+  return `You are AIProfile, a local digital twin assistant.
 
 Your job is to generate one high-signal question for the owner to answer.
 

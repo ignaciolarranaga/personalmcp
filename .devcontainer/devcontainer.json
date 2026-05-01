@@ -1,5 +1,5 @@
 {
-  "name": "PersonalMCP",
+  "name": "AIProfile",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -7,7 +7,7 @@
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
-      "label": "PersonalMCP MCP server",
+      "label": "AIProfile MCP server",
       "onAutoForward": "notify"
     }
   },

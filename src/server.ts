@@ -22,7 +22,7 @@ export function createServer(
   debugLogger: DebugLogger = noopDebugLogger,
 ): McpServer {
   const server = new McpServer({
-    name: "personalmcp",
+    name: "aiprofile",
     version: "0.1.0",
   });
 
@@ -139,7 +139,7 @@ export function createServer(
     {
       title: "Suggest a Memory-Building Question",
       description:
-        "Generate one useful question for the owner to answer, to help PersonalMCP build or improve its memory. " +
+        "Generate one useful question for the owner to answer, to help AIProfile build or improve its memory. " +
         "The owner's answer should be passed to ingest afterward.",
       inputSchema: z.object({
         goal: z

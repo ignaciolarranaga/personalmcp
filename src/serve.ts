@@ -39,9 +39,9 @@ export async function startServer(options: StartServerOptions): Promise<void> {
   });
 
   httpServer.listen(port, () => {
-    console.error(`[PersonalMCP] Server ready on http://localhost:${port}/mcp`);
+    console.error(`[AIProfile] Server ready on http://localhost:${port}/mcp`);
     if (options.debugEnabled) {
-      console.error("[PersonalMCP] Debug logging enabled.");
+      console.error("[AIProfile] Debug logging enabled.");
     }
   });
 }

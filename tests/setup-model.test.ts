@@ -32,7 +32,7 @@ describe("setup-model", () => {
   let consoleLog: MockInstance<typeof console.log>;
 
   beforeEach(() => {
-    tempDir = realpathSync(mkdtempSync(join(tmpdir(), "personalmcp-setup-model-")));
+    tempDir = realpathSync(mkdtempSync(join(tmpdir(), "aiprofile-setup-model-")));
     writeFileSync(join(tempDir, "config.yaml"), makeConfigYaml(), "utf-8");
     vi.resetModules();
     vi.clearAllMocks();

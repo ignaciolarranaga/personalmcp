@@ -384,9 +384,9 @@ describe("MCP integration", () => {
   });
 
   it("initializes encrypted memory on first startup with an environment password", async () => {
-    const memPath = mkdtempSync(join(tmpdir(), "personalmcp-encrypted-start-"));
-    const originalPassword = process.env.PERSONALMCP_PASSWORD;
-    process.env.PERSONALMCP_PASSWORD = "correct horse battery staple";
+    const memPath = mkdtempSync(join(tmpdir(), "aiprofile-encrypted-start-"));
+    const originalPassword = process.env.AIPROFILE_PASSWORD;
+    process.env.AIPROFILE_PASSWORD = "correct horse battery staple";
     try {
       const config = makeConfig(memPath, {
         memory: {
@@ -401,14 +401,14 @@ describe("MCP integration", () => {
       expect(config.memory.storage).toBeDefined();
       expect(config.memory.storage?.countRecords()).toBe(0);
     } finally {
-      if (originalPassword === undefined) delete process.env.PERSONALMCP_PASSWORD;
-      else process.env.PERSONALMCP_PASSWORD = originalPassword;
+      if (originalPassword === undefined) delete process.env.AIPROFILE_PASSWORD;
+      else process.env.AIPROFILE_PASSWORD = originalPassword;
       rmSync(memPath, { recursive: true, force: true });
     }
   });
 
   it("unlocks encrypted memory with a password file and rejects the wrong password", async () => {
-    const memPath = mkdtempSync(join(tmpdir(), "personalmcp-encrypted-unlock-"));
+    const memPath = mkdtempSync(join(tmpdir(), "aiprofile-encrypted-unlock-"));
     const passwordFile = join(memPath, "password.txt");
     writeFileSync(passwordFile, "vault password\n", "utf-8");
 
@@ -432,7 +432,7 @@ describe("MCP integration", () => {
   });
 
   it("ingests and asks through encrypted memory without storing plaintext on disk", async () => {
-    const memPath = mkdtempSync(join(tmpdir(), "personalmcp-encrypted-mcp-"));
+    const memPath = mkdtempSync(join(tmpdir(), "aiprofile-encrypted-mcp-"));
     const vault = unlockOrCreateVault(memPath, "vault password");
     const db = createMemoryDatabase({ memPath, key: vault.key, mode: "encrypted" });
     const server = await startTestServer({
@@ -484,7 +484,7 @@ async function startTestServer(
     db?: MemoryDatabase;
   } = {},
 ): Promise<RunningTestServer> {
-  const memPath = options.memPath ?? mkdtempSync(join(tmpdir(), "personalmcp-test-"));
+  const memPath = options.memPath ?? mkdtempSync(join(tmpdir(), "aiprofile-test-"));
   const db = options.db ?? createMemoryDatabase({ memPath, mode: "plain" });
   const llm = new QueueLlmProvider(options.responses);
   const config = makeConfig(memPath, {
@@ -507,7 +507,7 @@ async function startTestServer(
   await listen(httpServer);
 
   const address = httpServer.address() as AddressInfo;
-  const client = new Client({ name: "personalmcp-test", version: "1.0.0" });
+  const client = new Client({ name: "aiprofile-test", version: "1.0.0" });
   const clientTransport = new StreamableHTTPClientTransport(
     new URL(`http://127.0.0.1:${address.port}/mcp`),
   );

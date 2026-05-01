@@ -61,12 +61,12 @@ export async function initializeMemoryStorage(
   });
 
   if (vault.created) {
-    console.error(`[PersonalMCP] Initialized encrypted memory vault at ${vault.metadataPath}`);
+    console.error(`[AIProfile] Initialized encrypted memory vault at ${vault.metadataPath}`);
   }
 }
 
 async function resolvePassword(memPath: string, options: MemoryUnlockOptions): Promise<string> {
-  if (process.env.PERSONALMCP_PASSWORD) return process.env.PERSONALMCP_PASSWORD;
+  if (process.env.AIPROFILE_PASSWORD) return process.env.AIPROFILE_PASSWORD;
 
   if (options.passwordFile) {
     return readFileSync(options.passwordFile, "utf-8").trimEnd();
@@ -74,7 +74,7 @@ async function resolvePassword(memPath: string, options: MemoryUnlockOptions): P
 
   if (!process.stdin.isTTY || !process.stderr.isTTY) {
     throw new Error(
-      "Encrypted memory requires a password. Set PERSONALMCP_PASSWORD or use --password-file.",
+      "Encrypted memory requires a password. Set AIPROFILE_PASSWORD or use --password-file.",
     );
   }
 

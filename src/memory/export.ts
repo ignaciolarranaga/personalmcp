@@ -29,7 +29,7 @@ export function exportAsMarkdown(db: MemoryDatabase): string {
     byKind.get(record.kind)!.push(record);
   }
 
-  const parts: string[] = [`# PersonalMCP Memory Export`, `_Exported: ${new Date().toISOString()}_`, ""];
+  const parts: string[] = [`# AIProfile Memory Export`, `_Exported: ${new Date().toISOString()}_`, ""];
 
   for (const [kind, recs] of byKind) {
     parts.push(`## ${KIND_LABEL[kind]}`);

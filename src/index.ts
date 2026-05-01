@@ -12,6 +12,6 @@ const program = createCliProgram({
 });
 
 runCliProgram(program, process.argv.slice(2)).catch((err) => {
-  console.error(`[PersonalMCP] Fatal error: ${err instanceof Error ? err.message : String(err)}`);
+  console.error(`[AIProfile] Fatal error: ${err instanceof Error ? err.message : String(err)}`);
   process.exit(1);
 });

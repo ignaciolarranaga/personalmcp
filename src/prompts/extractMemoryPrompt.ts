@@ -1,7 +1,7 @@
 import type { SourceType } from "../types.js";
 
 export function buildExtractionSystem(): string {
-  return `You are a memory extraction system for PersonalMCP, a local digital twin server.
+  return `You are a memory extraction system for AIProfile, a local digital twin server.
 
 Your job is to extract durable memory items from personal content provided by the owner.
 

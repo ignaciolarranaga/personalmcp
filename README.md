@@ -1,4 +1,4 @@
-# PersonalMCP
+# AIProfile
 
 A local-first MCP server that acts as your personal digital twin.
 
@@ -27,7 +27,7 @@ npm start             # starts the MCP server on http://localhost:3000/mcp
 npm start -- --debug  # optional: logs MCP calls and LLM prompt/output snippets
 ```
 
-The first `npm start` asks you to create a memory password. PersonalMCP uses that password to
+The first `npm start` asks you to create a memory password. AIProfile uses that password to
 initialize encrypted storage automatically. Remember it or store it securely; encrypted memory
 cannot be recovered if the password is lost.
 
@@ -38,18 +38,18 @@ Once running, connect your MCP client to `http://localhost:3000/mcp` — see the
 After the package is published, you can use the same commands without cloning the repository:
 
 ```bash
-npx personalmcp setup-model
-npx personalmcp serve
-npx personalmcp memory export --format jsonl
-npx personalmcp memory import memory-backup.md
+npx aiprofile setup-model
+npx aiprofile serve
+npx aiprofile memory export --format jsonl
+npx aiprofile memory import memory-backup.md
 ```
 
-Tip: if `npx personalmcp serve` fails with an error like `Could not locate the bindings file`
+Tip: if `npx aiprofile serve` fails with an error like `Could not locate the bindings file`
 for `better-sqlite3`, your npm config may be skipping native dependency install scripts. Retry with
 install scripts enabled only for that command:
 
 ```bash
-npx --yes --ignore-scripts=false personalmcp serve
+npx --yes --ignore-scripts=false aiprofile serve
 ```
 
 If the same error persists after retrying, clear npm's failed npx install cache and run the command again.
@@ -58,7 +58,7 @@ If the same error persists after retrying, clear npm's failed npx install cache 
 
 ## GitHub Codespaces
 
-[Create a Codespace for PersonalMCP](https://codespaces.new/ignaciolarranaga/personalmcp)
+[Create a Codespace for AIProfile](https://codespaces.new/ignaciolarranaga/aiprofile)
 
 The repository includes a `.devcontainer` setup for Codespaces. It uses Node.js 22 and installs the
 native build tools needed by `better-sqlite3` and `node-llama-cpp` (`build-essential`, Python,
@@ -98,7 +98,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 ```json
 {
   "mcpServers": {
-    "personalmcp": {
+    "aiprofile": {
       "type": "http",
       "url": "http://localhost:3000/mcp"
     }
@@ -106,12 +106,12 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 }
 ```
 
-Save and restart Claude Desktop. The `personalmcp` server will appear in the tools panel.
+Save and restart Claude Desktop. The `aiprofile` server will appear in the tools panel.
 
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add personalmcp --transport http http://localhost:3000/mcp
+claude mcp add aiprofile --transport http http://localhost:3000/mcp
 ```
 
 The server is now available in all Claude Code sessions. Run `claude mcp list` to confirm.
@@ -120,7 +120,7 @@ The server is now available in all Claude Code sessions. Run `claude mcp list` t
 
 1. Open **Settings → Tools → Add MCP Server**
 2. Enter the URL: `http://localhost:3000/mcp`
-3. Save — the three PersonalMCP tools will appear immediately
+3. Save — the three AIProfile tools will appear immediately
 
 ### Any other MCP-compatible client
 
@@ -128,7 +128,7 @@ Use URL `http://localhost:3000/mcp` with transport type **Streamable HTTP**.
 
 ### Claude Custom Connector with ngrok
 
-Claude custom connectors are remote MCP connections. Claude connects from Anthropic's cloud infrastructure, so `localhost` URLs do not work there. To test PersonalMCP as a custom connector while still running it locally, expose the local HTTP server through ngrok:
+Claude custom connectors are remote MCP connections. Claude connects from Anthropic's cloud infrastructure, so `localhost` URLs do not work there. To test AIProfile as a custom connector while still running it locally, expose the local HTTP server through ngrok:
 
 ```bash
 npm run build
@@ -153,7 +153,7 @@ Add the MCP endpoint path when configuring Claude:
 https://abc123.ngrok-free.app/mcp
 ```
 
-ngrok provides the public HTTPS certificate and forwards traffic to the local HTTP server, so PersonalMCP does not need built-in HTTPS for this flow. Stop the ngrok process when you are done testing.
+ngrok provides the public HTTPS certificate and forwards traffic to the local HTTP server, so AIProfile does not need built-in HTTPS for this flow. Stop the ngrok process when you are done testing.
 
 ---
 
@@ -161,7 +161,7 @@ ngrok provides the public HTTPS certificate and forwards traffic to the local HT
 
 The Anthropic / Model Context Protocol debugging tool is **MCP Inspector**. It gives you a browser UI for connecting to an MCP server, listing tools, inspecting schemas, and calling tools with test inputs.
 
-Start PersonalMCP in one terminal:
+Start AIProfile in one terminal:
 
 ```bash
 npm run build
@@ -193,7 +193,7 @@ After connecting, open the **Tools** tab and run **List Tools**. You should see:
 - `ask`
 - `suggest_question`
 
-Use the Inspector to call a tool directly and inspect the raw response. If a call fails, check both terminals: the Inspector terminal shows client/proxy connection issues, and the PersonalMCP terminal shows server-side errors such as model loading, config, or tool execution failures.
+Use the Inspector to call a tool directly and inspect the raw response. If a call fails, check both terminals: the Inspector terminal shows client/proxy connection issues, and the AIProfile terminal shows server-side errors such as model loading, config, or tool execution failures.
 
 If `npx` reports an unsupported Node.js version, use Node.js 22 or later.
 
@@ -271,6 +271,9 @@ retrieval ranking. A `sources` table tracks every ingested document to prevent d
 In plain mode (`memory.mode: plain`), the database is stored as `memory.db` (unencrypted, on-disk
 SQLite). Use plain mode only for local testing and debugging.
 
+Encrypted vaults created before the AIProfile rename are not compatible with this release. Export
+memory before upgrading, or start with a fresh `./memory/` directory and import the backup afterward.
+
 ### Inspecting and exporting memory
 
 Because memory lives in a binary database rather than readable files, use the memory CLI:
@@ -278,26 +281,26 @@ Because memory lives in a binary database rather than readable files, use the me
 ```bash
 # Export all active records to Markdown (stdout)
 npm run memory -- export
-npx personalmcp memory export
+npx aiprofile memory export
 
 # Export as JSON Lines
 npm run memory -- export --format=jsonl
-npx personalmcp memory export --format jsonl
+npx aiprofile memory export --format jsonl
 
 # Import from a previously exported Markdown file
 npm run memory -- import memory-backup.md
-npx personalmcp memory import memory-backup.md
+npx aiprofile memory import memory-backup.md
 
 # Supply the memory password non-interactively when exporting
 npm run memory -- export --password-file ./local-password-file
-npx personalmcp memory export --password-file ./local-password-file
+npx aiprofile memory export --password-file ./local-password-file
 ```
 
 ---
 
 ## Configuration
 
-PersonalMCP uses these defaults when no `config.yaml` is present. Create or edit `config.yaml` to
+AIProfile uses these defaults when no `config.yaml` is present. Create or edit `config.yaml` to
 change settings:
 
 ```yaml
@@ -335,14 +338,14 @@ recommended for the available RAM/VRAM:
 
 ```bash
 npm run setup-model
-npx personalmcp setup-model
+npx aiprofile setup-model
 ```
 
 Use an explicit model ID when you want to override automatic selection:
 
 ```bash
 npm run setup-model -- --model qwen3-4b
-npx personalmcp setup-model --model qwen3-4b
+npx aiprofile setup-model --model qwen3-4b
 ```
 
 `qwen3-4b` is the safe fallback model if no curated model is recommended for the detected machine.
@@ -353,14 +356,14 @@ List curated GGUF models with RAM/VRAM-aware recommendations:
 
 ```bash
 npm run setup-model -- --list-models
-npx personalmcp setup-model --list-models
+npx aiprofile setup-model --list-models
 ```
 
 Install a curated model by ID:
 
 ```bash
 npm run setup-model -- --model qwen3-14b --write-config
-npx personalmcp setup-model --model qwen3-14b --write-config
+npx aiprofile setup-model --model qwen3-14b --write-config
 ```
 
 `--write-config` updates only `llm.model` and `llm.model_path` in `config.yaml`. Without it, the
@@ -394,7 +397,7 @@ and is not included as a curated option.
 
 ```bash
 npm run setup-model -- --model llama-3.2-3b
-npx personalmcp setup-model --model llama-3.2-3b
+npx aiprofile setup-model --model llama-3.2-3b
 ```
 
 Manual download: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF  
@@ -403,12 +406,12 @@ Save as: `./models/llama-3.2-3b-instruct-q4_k_m.gguf`
 ### Custom Hugging Face or HTTP GGUF model
 
 ```bash
-npx personalmcp setup-model --model hf:Qwen/Qwen3-8B-GGUF:Q4_K_M --write-config
-npx personalmcp setup-model --model hf:Qwen/Qwen3-235B-A22B-GGUF:Q4_K_M
-npx personalmcp setup-model --model https://huggingface.co/user/repo/resolve/main/model.gguf
+npx aiprofile setup-model --model hf:Qwen/Qwen3-8B-GGUF:Q4_K_M --write-config
+npx aiprofile setup-model --model hf:Qwen/Qwen3-235B-A22B-GGUF:Q4_K_M
+npx aiprofile setup-model --model https://huggingface.co/user/repo/resolve/main/model.gguf
 ```
 
-Only GGUF models supported by `node-llama-cpp` can be loaded by PersonalMCP. Split GGUF models are
+Only GGUF models supported by `node-llama-cpp` can be loaded by AIProfile. Split GGUF models are
 supported when the model URI resolves to the first `-00001-of-000NN.gguf` part; all downloaded parts
 must remain in the same directory.
 
@@ -420,15 +423,15 @@ For service managers or MCP clients that start the server without an interactive
 the memory password through an environment variable:
 
 ```bash
-PERSONALMCP_PASSWORD='your memory password' npm start
-PERSONALMCP_PASSWORD='your memory password' npx personalmcp serve
+AIPROFILE_PASSWORD='your memory password' npm start
+AIPROFILE_PASSWORD='your memory password' npx aiprofile serve
 ```
 
 Or store the password in a local file and pass the file path:
 
 ```bash
 npm start -- --password-file ./local-password-file
-npx personalmcp serve --password-file ./local-password-file
+npx aiprofile serve --password-file ./local-password-file
 ```
 
 Keep password files outside version control.

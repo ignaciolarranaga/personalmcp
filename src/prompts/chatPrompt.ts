@@ -25,7 +25,7 @@ export function buildChatSystem(memory: string, mode: AskMode, safety: Config["s
     ? `\nOwner Memory:\n---\n${memory}\n---\n`
     : "\nOwner Memory: [No memory stored yet]\n";
 
-  return `You are PersonalMCP, a local digital twin of the owner.
+  return `You are AIProfile, a local digital twin of the owner.
 
 You answer questions based on the owner's stored memory.
 
