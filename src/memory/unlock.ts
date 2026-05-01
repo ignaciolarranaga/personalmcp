@@ -5,13 +5,15 @@ import { createMemoryDatabase } from "./db.js";
 import { hasVault, unlockOrCreateVault } from "./vault.js";
 import type { Config } from "../types.js";
 
-export interface CliOptions {
+export interface MemoryUnlockOptions {
   debugEnabled: boolean;
   passwordFile?: string;
 }
 
-export function parseCliOptions(argv: string[]): CliOptions {
-  const options: CliOptions = {
+export type CliOptions = MemoryUnlockOptions;
+
+export function parseCliOptions(argv: string[]): MemoryUnlockOptions {
+  const options: MemoryUnlockOptions = {
     debugEnabled: false,
   };
 
@@ -39,7 +41,10 @@ export function parseCliOptions(argv: string[]): CliOptions {
   return options;
 }
 
-export async function initializeMemoryStorage(config: Config, options: CliOptions): Promise<void> {
+export async function initializeMemoryStorage(
+  config: Config,
+  options: MemoryUnlockOptions,
+): Promise<void> {
   const mode = config.memory.mode ?? "encrypted";
 
   if (mode === "plain") {
@@ -60,7 +65,7 @@ export async function initializeMemoryStorage(config: Config, options: CliOption
   }
 }
 
-async function resolvePassword(memPath: string, options: CliOptions): Promise<string> {
+async function resolvePassword(memPath: string, options: MemoryUnlockOptions): Promise<string> {
   if (process.env.PERSONALMCP_PASSWORD) return process.env.PERSONALMCP_PASSWORD;
 
   if (options.passwordFile) {

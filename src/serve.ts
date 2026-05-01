@@ -1,0 +1,47 @@
+import { randomUUID } from "node:crypto";
+import { createServer as createHttpServer } from "node:http";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { loadConfig } from "./config.js";
+import { createDebugLogger } from "./debug.js";
+import { NodeLlamaCppProvider } from "./llm/NodeLlamaCppProvider.js";
+import { initializeMemoryStorage, type MemoryUnlockOptions } from "./memory/unlock.js";
+import { createServer } from "./server.js";
+
+export type StartServerOptions = MemoryUnlockOptions;
+
+export async function startServer(options: StartServerOptions): Promise<void> {
+  const debugLogger = createDebugLogger({ enabled: options.debugEnabled });
+  const config = loadConfig();
+  await initializeMemoryStorage(config, options);
+  const port = config.server?.port ?? 3000;
+
+  const llm = new NodeLlamaCppProvider(
+    config.llm.model_path,
+    config.llm.temperature,
+    config.llm.max_tokens,
+    debugLogger,
+  );
+
+  await llm.initialize();
+
+  const mcpServer = createServer(llm, config, debugLogger);
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+  });
+  await mcpServer.connect(transport);
+
+  const httpServer = createHttpServer(async (req, res) => {
+    if (req.url === "/mcp") {
+      await transport.handleRequest(req, res);
+      return;
+    }
+    res.writeHead(404).end("Not found");
+  });
+
+  httpServer.listen(port, () => {
+    console.error(`[PersonalMCP] Server ready on http://localhost:${port}/mcp`);
+    if (options.debugEnabled) {
+      console.error("[PersonalMCP] Debug logging enabled.");
+    }
+  });
+}

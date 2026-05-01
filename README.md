@@ -10,7 +10,7 @@ No cloud API required. Memory is stored in an encrypted SQLite database on disk.
 
 ## Prerequisites
 
-- Node.js 18 or later
+- Node.js 22 or later
 - ~3 GB free disk space (for the default model)
 - macOS, Linux, or Windows (Metal/CUDA acceleration detected automatically)
 - **C++ build tools** for the SQLite native addon — on macOS, run `xcode-select --install`
@@ -32,6 +32,17 @@ initialize encrypted storage automatically. Remember it or store it securely; en
 cannot be recovered if the password is lost.
 
 Once running, connect your MCP client to `http://localhost:3000/mcp` — see the section below for your client.
+
+### NPX usage
+
+After the package is published, you can use the same commands without cloning the repository:
+
+```bash
+npx personalmcp setup-model
+npx personalmcp serve
+npx personalmcp memory export --format jsonl
+npx personalmcp memory import memory-backup.md
+```
 
 ---
 
@@ -174,7 +185,7 @@ After connecting, open the **Tools** tab and run **List Tools**. You should see:
 
 Use the Inspector to call a tool directly and inspect the raw response. If a call fails, check both terminals: the Inspector terminal shows client/proxy connection issues, and the PersonalMCP terminal shows server-side errors such as model loading, config, or tool execution failures.
 
-If `npx` reports an unsupported Node.js version for the Inspector, use Node.js 22 or later for the Inspector process. PersonalMCP itself only requires Node.js 18 or later.
+If `npx` reports an unsupported Node.js version, use Node.js 22 or later.
 
 ---
 
@@ -257,22 +268,27 @@ Because memory lives in a binary database rather than readable files, use the me
 ```bash
 # Export all active records to Markdown (stdout)
 npm run memory -- export
+npx personalmcp memory export
 
 # Export as JSON Lines
 npm run memory -- export --format=jsonl
+npx personalmcp memory export --format jsonl
 
 # Import from a previously exported Markdown file
 npm run memory -- import memory-backup.md
+npx personalmcp memory import memory-backup.md
 
 # Supply the memory password non-interactively when exporting
 npm run memory -- export --password-file ./local-password-file
+npx personalmcp memory export --password-file ./local-password-file
 ```
 
 ---
 
 ## Configuration
 
-Edit `config.yaml` to change settings:
+PersonalMCP uses these defaults when no `config.yaml` is present. Create or edit `config.yaml` to
+change settings:
 
 ```yaml
 server:
@@ -308,6 +324,7 @@ safety:
 
 ```bash
 npm run setup:model
+npx personalmcp setup-model
 ```
 
 Manual download: https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF  
@@ -319,6 +336,7 @@ Save as: `./models/qwen3-4b-instruct-q4_k_m.gguf`
 
 ```bash
 npm run setup:model -- --fallback
+npx personalmcp setup-model --fallback
 ```
 
 Manual download: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF  
@@ -334,12 +352,14 @@ the memory password through an environment variable:
 
 ```bash
 PERSONALMCP_PASSWORD='your memory password' npm start
+PERSONALMCP_PASSWORD='your memory password' npx personalmcp serve
 ```
 
 Or store the password in a local file and pass the file path:
 
 ```bash
 npm start -- --password-file ./local-password-file
+npx personalmcp serve --password-file ./local-password-file
 ```
 
 Keep password files outside version control.

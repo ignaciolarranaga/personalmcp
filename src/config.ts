@@ -9,6 +9,7 @@ export function loadConfig(configPath?: string): Config {
   try {
     raw = readFileSync(filePath, "utf-8");
   } catch {
+    if (!configPath) return defaultConfig();
     throw new Error(`Cannot read config file at ${filePath}. Make sure config.yaml exists.`);
   }
 
@@ -26,4 +27,32 @@ export function loadConfig(configPath?: string): Config {
   }
 
   return parsed;
+}
+
+function defaultConfig(): Config {
+  return {
+    server: {
+      port: 3000,
+    },
+    owner: {
+      name: null,
+      preferred_language: null,
+    },
+    llm: {
+      provider: "node-llama-cpp",
+      model: "qwen3-4b-instruct-q4_k_m",
+      model_path: "./models/qwen3-4b-instruct-q4_k_m.gguf",
+      temperature: 0.2,
+      max_tokens: 1200,
+    },
+    memory: {
+      path: "./memory",
+      mode: "encrypted",
+    },
+    safety: {
+      allow_first_person: true,
+      public_can_access_private_memory: false,
+      require_disclaimer_for_inferred_answers: true,
+    },
+  };
 }
