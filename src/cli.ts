@@ -31,7 +31,9 @@ export function createCliProgram(handlers: CliHandlers): Command {
 
   program
     .name("aiprofile")
-    .description("A local-first MCP server that acts as your personal digital twin")
+    .description(
+      "A local-first MCP server for structured, agent-readable identity and context profiles",
+    )
     .version("0.1.0")
     .showHelpAfterError()
     .showSuggestionAfterError();

@@ -1,10 +1,19 @@
 # AIProfile
 
-A local-first MCP server that acts as your personal digital twin.
+AIProfile is a structured, agent-readable identity and context layer for people, companies,
+projects, and institutions.
 
-Feed it transcripts, notes, and documents. It extracts durable memory locally using a GGUF model. Any MCP-compatible client can then ask it questions about you or draft responses in your voice.
+Humans already have websites, blogs, LinkedIn profiles, resumes, emails, and company pages. LLMs
+and AI agents need something more explicit: a structured, trustworthy, permission-aware profile they
+can read and use. AIProfile fills that gap by giving agents a source of truth for an entity's
+identity, context, preferences, principles, capabilities, contact points, policies, and relevant
+knowledge.
 
-No cloud API required. Memory is stored in an encrypted SQLite database on disk.
+Feed it transcripts, notes, documents, and other source material. It extracts durable memory locally
+using a GGUF model, stores that memory in an encrypted SQLite database, and exposes it through MCP so
+compatible clients can ask questions, draft responses, and respect the profile's boundaries.
+
+No cloud API required.
 
 ---
 
@@ -203,7 +212,7 @@ If `npx` reports an unsupported Node.js version, use Node.js 22 or later.
 
 ### `ingest`
 
-Processes personal content and updates local memory.
+Processes profile source material and updates local memory.
 
 ```
 ingest(
@@ -217,7 +226,8 @@ ingest(
 
 ### `ask`
 
-Answers a question about or as the owner using stored memory.
+Answers a question about the profile entity, or drafts from that entity's perspective, using stored
+memory.
 
 ```
 ask(
@@ -230,8 +240,8 @@ ask(
 
 ### `suggest_question`
 
-Generates one useful question for the owner to answer, to help build memory.
-Pass the owner's answer back to `ingest` with `source_type: "owner_answer"`.
+Generates one useful question for the profile owner or maintainer to answer, to help build memory.
+Pass the answer back to `ingest` with `source_type: "owner_answer"`.
 
 ```
 suggest_question(
@@ -485,7 +495,7 @@ Confirm the MCP endpoint works at `http://localhost:3000/mcp` with MCP Inspector
 
 ## Example Usage
 
-**Build initial memory:**
+**Build initial memory for a person profile:**
 
 ```
 User → Claude Desktop → suggest_question()

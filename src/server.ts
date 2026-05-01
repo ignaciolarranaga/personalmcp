@@ -32,8 +32,8 @@ export function createServer(
     {
       title: "Ingest Content",
       description:
-        "Process personal content and update the owner's local memory. " +
-        "Use this when you have a transcript, note, document, or answer to feed into memory.",
+        "Process profile source material and update local memory. " +
+        "Use this when you have a transcript, note, document, policy, or answer to feed into memory.",
       inputSchema: z.object({
         content: z.string().describe("The raw text content to ingest"),
         source_type: z
@@ -86,9 +86,10 @@ export function createServer(
   server.registerTool(
     "ask",
     {
-      title: "Ask the Digital Twin",
+      title: "Ask AIProfile",
       description:
-        "Ask a question about or as the owner. Returns an answer based on stored memory. " +
+        "Ask a question about the profile entity, or draft from that entity's perspective. " +
+        "Returns an answer based on stored memory. " +
         "Use mode 'about_owner' for facts, 'likely_opinion' for inferred views, " +
         "'as_owner' for first-person responses, 'draft_response' to generate a reply.",
       inputSchema: z.object({
@@ -99,7 +100,7 @@ export function createServer(
           .optional()
           .default("about_owner")
           .describe(
-            "How to answer: about the owner, as the owner, as likely opinion, or as a draft",
+            "How to answer: facts about the profile entity, from its perspective, as a likely opinion, or as a draft",
           ),
         audience: z
           .enum(["owner", "public", "trusted", "unknown"])
@@ -139,8 +140,8 @@ export function createServer(
     {
       title: "Suggest a Memory-Building Question",
       description:
-        "Generate one useful question for the owner to answer, to help AIProfile build or improve its memory. " +
-        "The owner's answer should be passed to ingest afterward.",
+        "Generate one useful question for the profile owner or maintainer to answer, " +
+        "to help AIProfile build or improve its memory. The answer should be passed to ingest afterward.",
       inputSchema: z.object({
         goal: z
           .enum([
