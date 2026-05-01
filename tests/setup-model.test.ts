@@ -88,6 +88,47 @@ describe("setup-model", () => {
     });
   });
 
+  it("resolves newer single-file curated model IDs", async () => {
+    const { setupModel } = await import("../src/setup-model.js");
+    const expectedPath = join(tempDir, "models", "phi-4-q4_k_m.gguf");
+    llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
+
+    await setupModel({ model: "phi-4", listModels: false, writeConfig: true });
+
+    expect(llamaMocks.resolveModelFile).toHaveBeenCalledWith("hf:bartowski/phi-4-GGUF:Q4_K_M", {
+      directory: join(tempDir, "models"),
+      fileName: "phi-4-q4_k_m.gguf",
+    });
+    expect(readConfig()).toMatchObject({
+      llm: {
+        model: "phi-4",
+        model_path: "./models/phi-4-q4_k_m.gguf",
+        provider: "node-llama-cpp",
+      },
+    });
+  });
+
+  it("keeps split curated model entrypoints as the first GGUF part", async () => {
+    const { setupModel } = await import("../src/setup-model.js");
+    const expectedPath = join(tempDir, "models", "gpt-oss-120b-q4_k_m-00001-of-00002.gguf");
+    llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
+
+    await setupModel({ model: "gpt-oss-120b", listModels: false, writeConfig: true });
+
+    expect(llamaMocks.resolveModelFile).toHaveBeenCalledWith("hf:unsloth/gpt-oss-120b-GGUF:Q4_K_M", {
+      directory: join(tempDir, "models"),
+      fileName: "gpt-oss-120b-q4_k_m.gguf",
+    });
+    expect(existsSync(join(tempDir, "models", "gpt-oss-120b-q4_k_m.gguf"))).toBe(false);
+    expect(readConfig()).toMatchObject({
+      llm: {
+        model: "gpt-oss-120b",
+        model_path: "./models/gpt-oss-120b-q4_k_m-00001-of-00002.gguf",
+        provider: "node-llama-cpp",
+      },
+    });
+  });
+
   it("resolves custom model specs into the models directory without forcing a filename", async () => {
     const { setupModel } = await import("../src/setup-model.js");
     const expectedPath = join(tempDir, "models", "Custom-Model.Q4_K_M.gguf");
@@ -122,6 +163,20 @@ describe("setup-model", () => {
     expect(llamaMocks.resolveModelFile).not.toHaveBeenCalled();
   });
 
+  it("skips downloading split models only when all parts already exist", async () => {
+    const { setupModel } = await import("../src/setup-model.js");
+    const modelsDir = join(tempDir, "models");
+    const firstPart = join(modelsDir, "gpt-oss-120b-q4_k_m-00001-of-00002.gguf");
+    const secondPart = join(modelsDir, "gpt-oss-120b-q4_k_m-00002-of-00002.gguf");
+    mkdirSync(modelsDir);
+    writeFileSync(firstPart, "existing 1", "utf-8");
+    writeFileSync(secondPart, "existing 2", "utf-8");
+
+    await setupModel({ model: "gpt-oss-120b", listModels: false, writeConfig: false });
+
+    expect(llamaMocks.resolveModelFile).not.toHaveBeenCalled();
+  });
+
   it("prints curated recommendations with memory fit labels", async () => {
     const { printModelRecommendations } = await import("../src/setup-model.js");
 
@@ -136,6 +191,52 @@ describe("setup-model", () => {
     expect(output).toContain("llama-3.2-3b [recommended]");
     expect(output).toContain("qwen3-8b [too large]");
     expect(output).toContain("using RAM-only guidance");
+  });
+
+  it("prints recommendations for 32GB machines", async () => {
+    const { printModelRecommendations } = await import("../src/setup-model.js");
+
+    printModelRecommendations({
+      totalRamGb: 32,
+      freeRamGb: 24,
+      gpuAvailable: false,
+    });
+
+    const output = consoleLog.mock.calls.map(([line]) => String(line)).join("\n");
+    expect(output).toContain("mistral-small-3.2-24b [recommended]");
+    expect(output).toContain("qwen3-32b [possible]");
+    expect(output).toContain("llama-3.3-70b [too large]");
+  });
+
+  it("prints recommendations for 64GB machines", async () => {
+    const { printModelRecommendations } = await import("../src/setup-model.js");
+
+    printModelRecommendations({
+      totalRamGb: 64,
+      freeRamGb: 48,
+      gpuAvailable: false,
+    });
+
+    const output = consoleLog.mock.calls.map(([line]) => String(line)).join("\n");
+    expect(output).toContain("llama-3.3-70b [possible]");
+    expect(output).toContain("deepseek-r1-llama-70b [possible]");
+    expect(output).toContain("gpt-oss-120b [too large]");
+  });
+
+  it("prints split-model recommendations for 128GB machines", async () => {
+    const { printModelRecommendations } = await import("../src/setup-model.js");
+
+    printModelRecommendations({
+      totalRamGb: 128,
+      freeRamGb: 96,
+      gpuAvailable: false,
+    });
+
+    const output = consoleLog.mock.calls.map(([line]) => String(line)).join("\n");
+    expect(output).toContain("gpt-oss-120b [recommended]");
+    expect(output).toContain("llama-4-scout [recommended]");
+    expect(output).toContain("mistral-large-2411 [recommended]");
+    expect(output).toContain("Split GGUF: downloads 2 parts; keep them together.");
   });
 
   it("falls back to RAM-only hardware detection when VRAM detection fails", async () => {

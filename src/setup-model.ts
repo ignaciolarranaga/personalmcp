@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { freemem, totalmem } from "node:os";
-import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import yaml from "js-yaml";
 import { getLlama, resolveModelFile } from "node-llama-cpp";
 import type { Config } from "./types.js";
@@ -14,13 +14,19 @@ export type ModelFit = "recommended" | "possible" | "too large";
 export interface CuratedModel {
   id: string;
   label: string;
+  family?: string;
+  quantization?: string;
+  tier?: string;
   spec: string;
   targetFile: string;
+  downloadFileName?: string;
+  splitParts?: number;
   diskSizeGb: number;
   minimumRamGb: number;
   recommendedRamGb: number;
   recommendedVramGb?: number;
   suitability: string;
+  notes?: string;
   manualUrl: string;
   manualFile: string;
 }
@@ -42,34 +48,11 @@ export interface SetupModelOptions {
 
 export const CURATED_MODELS: CuratedModel[] = [
   {
-    id: DEFAULT_MODEL_ID,
-    label: "Qwen3-4B-Instruct Q4_K_M",
-    spec: "hf:unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
-    targetFile: "qwen3-4b-instruct-q4_k_m.gguf",
-    diskSizeGb: 2.5,
-    minimumRamGb: 8,
-    recommendedRamGb: 12,
-    recommendedVramGb: 4,
-    suitability: "Default. Good instruction following and multilingual support.",
-    manualUrl: "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF",
-    manualFile: "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
-  },
-  {
-    id: "llama-3.2-3b",
-    label: "Llama-3.2-3B-Instruct Q4_K_M",
-    spec: "hf:bartowski/Llama-3.2-3B-Instruct-GGUF/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-    targetFile: "llama-3.2-3b-instruct-q4_k_m.gguf",
-    diskSizeGb: 2,
-    minimumRamGb: 6,
-    recommendedRamGb: 8,
-    recommendedVramGb: 3,
-    suitability: "Low-memory option. Faster, but less capable than the default.",
-    manualUrl: "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF",
-    manualFile: "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-  },
-  {
     id: "qwen3-0.6b",
     label: "Qwen3-0.6B Q8_0",
+    family: "Qwen",
+    quantization: "Q8_0",
+    tier: "4-6GB RAM",
     spec: "hf:Qwen/Qwen3-0.6B-GGUF:Q8_0",
     targetFile: "qwen3-0.6b-q8_0.gguf",
     diskSizeGb: 0.8,
@@ -81,17 +64,304 @@ export const CURATED_MODELS: CuratedModel[] = [
     manualFile: "Qwen3-0.6B-Q8_0.gguf",
   },
   {
+    id: "llama-3.2-3b",
+    label: "Llama-3.2-3B-Instruct Q4_K_M",
+    family: "Llama",
+    quantization: "Q4_K_M",
+    tier: "6-8GB RAM",
+    spec: "hf:bartowski/Llama-3.2-3B-Instruct-GGUF/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+    targetFile: "llama-3.2-3b-instruct-q4_k_m.gguf",
+    diskSizeGb: 2,
+    minimumRamGb: 6,
+    recommendedRamGb: 8,
+    recommendedVramGb: 3,
+    suitability: "Low-memory option. Faster, but less capable than the default.",
+    manualUrl: "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF",
+    manualFile: "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+  },
+  {
+    id: DEFAULT_MODEL_ID,
+    label: "Qwen3-4B-Instruct Q4_K_M",
+    family: "Qwen",
+    quantization: "Q4_K_M",
+    tier: "8-12GB RAM",
+    spec: "hf:unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    targetFile: "qwen3-4b-instruct-q4_k_m.gguf",
+    diskSizeGb: 2.5,
+    minimumRamGb: 8,
+    recommendedRamGb: 12,
+    recommendedVramGb: 4,
+    suitability: "Default. Good instruction following and multilingual support.",
+    manualUrl: "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    manualFile: "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+  },
+  {
+    id: "phi-4-mini",
+    label: "Phi-4-mini-instruct Q4_K_M",
+    family: "Phi",
+    quantization: "Q4_K_M",
+    tier: "8-12GB RAM",
+    spec: "hf:bartowski/microsoft_Phi-4-mini-instruct-GGUF:Q4_K_M",
+    targetFile: "phi-4-mini-instruct-q4_k_m.gguf",
+    diskSizeGb: 2.6,
+    minimumRamGb: 8,
+    recommendedRamGb: 12,
+    recommendedVramGb: 4,
+    suitability: "Small Microsoft Phi option for efficient instruction following.",
+    manualUrl: "https://huggingface.co/bartowski/microsoft_Phi-4-mini-instruct-GGUF",
+    manualFile: "Phi-4-mini-instruct-Q4_K_M.gguf",
+  },
+  {
     id: "qwen3-8b",
     label: "Qwen3-8B Q4_K_M",
+    family: "Qwen",
+    quantization: "Q4_K_M",
+    tier: "12-16GB RAM",
     spec: "hf:Qwen/Qwen3-8B-GGUF:Q4_K_M",
     targetFile: "qwen3-8b-q4_k_m.gguf",
-    diskSizeGb: 5,
+    diskSizeGb: 4.7,
     minimumRamGb: 12,
     recommendedRamGb: 16,
     recommendedVramGb: 6,
     suitability: "Stronger responses on machines with more memory.",
     manualUrl: "https://huggingface.co/Qwen/Qwen3-8B-GGUF",
     manualFile: "Qwen3-8B-Q4_K_M.gguf",
+  },
+  {
+    id: "gemma-3-12b",
+    label: "Gemma-3-12B-IT Q4_K_M",
+    family: "Gemma",
+    quantization: "Q4_K_M",
+    tier: "16-24GB RAM",
+    spec: "hf:ggml-org/gemma-3-12b-it-GGUF:Q4_K_M",
+    targetFile: "gemma-3-12b-it-q4_k_m.gguf",
+    diskSizeGb: 7.3,
+    minimumRamGb: 16,
+    recommendedRamGb: 24,
+    recommendedVramGb: 8,
+    suitability: "Gemma option with strong multilingual support and long context.",
+    manualUrl: "https://huggingface.co/ggml-org/gemma-3-12b-it-GGUF",
+    manualFile: "gemma-3-12b-it-Q4_K_M.gguf",
+  },
+  {
+    id: "qwen3-14b",
+    label: "Qwen3-14B Q4_K_M",
+    family: "Qwen",
+    quantization: "Q4_K_M",
+    tier: "16-24GB RAM",
+    spec: "hf:Qwen/Qwen3-14B-GGUF:Q4_K_M",
+    targetFile: "qwen3-14b-q4_k_m.gguf",
+    diskSizeGb: 9,
+    minimumRamGb: 16,
+    recommendedRamGb: 24,
+    recommendedVramGb: 10,
+    suitability: "Balanced mid-size Qwen model for reasoning and multilingual work.",
+    manualUrl: "https://huggingface.co/Qwen/Qwen3-14B-GGUF",
+    manualFile: "Qwen3-14B-Q4_K_M.gguf",
+  },
+  {
+    id: "phi-4",
+    label: "Phi-4 Q4_K_M",
+    family: "Phi",
+    quantization: "Q4_K_M",
+    tier: "16-24GB RAM",
+    spec: "hf:bartowski/phi-4-GGUF:Q4_K_M",
+    targetFile: "phi-4-q4_k_m.gguf",
+    diskSizeGb: 9.1,
+    minimumRamGb: 16,
+    recommendedRamGb: 24,
+    recommendedVramGb: 10,
+    suitability: "Compact 14B-class model with strong math and code behavior.",
+    manualUrl: "https://huggingface.co/bartowski/phi-4-GGUF",
+    manualFile: "phi-4-Q4_K_M.gguf",
+  },
+  {
+    id: "gpt-oss-20b",
+    label: "gpt-oss-20b Q4_K_M",
+    family: "gpt-oss",
+    quantization: "Q4_K_M",
+    tier: "16-24GB RAM",
+    spec: "hf:unsloth/gpt-oss-20b-GGUF:Q4_K_M",
+    targetFile: "gpt-oss-20b-q4_k_m.gguf",
+    diskSizeGb: 11.6,
+    minimumRamGb: 16,
+    recommendedRamGb: 24,
+    recommendedVramGb: 12,
+    suitability: "OpenAI open-weight reasoning model for local agentic tasks.",
+    notes: "Uses the gpt-oss harmony chat format; node-llama-cpp resolves this automatically.",
+    manualUrl: "https://huggingface.co/unsloth/gpt-oss-20b-GGUF",
+    manualFile: "gpt-oss-20b-Q4_K_M.gguf",
+  },
+  {
+    id: "mistral-small-3.2-24b",
+    label: "Mistral-Small-3.2-24B-Instruct Q4_K_M",
+    family: "Mistral",
+    quantization: "Q4_K_M",
+    tier: "24-32GB RAM",
+    spec: "hf:llmware/mistral-3.2-24b-gguf/Mistral-Small-3.2-24B-Instruct-2506-Q4_K_M.gguf",
+    targetFile: "mistral-small-3.2-24b-instruct-q4_k_m.gguf",
+    diskSizeGb: 14.3,
+    minimumRamGb: 24,
+    recommendedRamGb: 32,
+    recommendedVramGb: 14,
+    suitability: "General-purpose Mistral 24B option for higher-memory laptops and desktops.",
+    manualUrl: "https://huggingface.co/llmware/mistral-3.2-24b-gguf",
+    manualFile: "Mistral-Small-3.2-24B-Instruct-2506-Q4_K_M.gguf",
+  },
+  {
+    id: "gemma-3-27b",
+    label: "Gemma-3-27B-IT Q4_K_M",
+    family: "Gemma",
+    quantization: "Q4_K_M",
+    tier: "32-48GB RAM",
+    spec: "hf:ggml-org/gemma-3-27b-it-GGUF:Q4_K_M",
+    targetFile: "gemma-3-27b-it-q4_k_m.gguf",
+    diskSizeGb: 16.5,
+    minimumRamGb: 32,
+    recommendedRamGb: 48,
+    recommendedVramGb: 16,
+    suitability: "Large Gemma model for quality-focused local use.",
+    manualUrl: "https://huggingface.co/ggml-org/gemma-3-27b-it-GGUF",
+    manualFile: "gemma-3-27b-it-Q4_K_M.gguf",
+  },
+  {
+    id: "qwen3-30b-a3b",
+    label: "Qwen3-30B-A3B MoE Q4_K_M",
+    family: "Qwen",
+    quantization: "Q4_K_M",
+    tier: "32-48GB RAM",
+    spec: "hf:Qwen/Qwen3-30B-A3B-GGUF:Q4_K_M",
+    targetFile: "qwen3-30b-a3b-q4_k_m.gguf",
+    diskSizeGb: 18.6,
+    minimumRamGb: 32,
+    recommendedRamGb: 48,
+    recommendedVramGb: 18,
+    suitability: "Efficient MoE Qwen model with only a subset of parameters active per token.",
+    manualUrl: "https://huggingface.co/Qwen/Qwen3-30B-A3B-GGUF",
+    manualFile: "Qwen3-30B-A3B-Q4_K_M.gguf",
+  },
+  {
+    id: "qwen3-32b",
+    label: "Qwen3-32B Q4_K_M",
+    family: "Qwen",
+    quantization: "Q4_K_M",
+    tier: "32-48GB RAM",
+    spec: "hf:Qwen/Qwen3-32B-GGUF:Q4_K_M",
+    targetFile: "qwen3-32b-q4_k_m.gguf",
+    diskSizeGb: 19.8,
+    minimumRamGb: 32,
+    recommendedRamGb: 48,
+    recommendedVramGb: 20,
+    suitability: "Dense 32B Qwen model for stronger local reasoning and instruction following.",
+    manualUrl: "https://huggingface.co/Qwen/Qwen3-32B-GGUF",
+    manualFile: "Qwen3-32B-Q4_K_M.gguf",
+  },
+  {
+    id: "deepseek-r1-qwen-32b",
+    label: "DeepSeek-R1-Distill-Qwen-32B Q4_K_M",
+    family: "DeepSeek",
+    quantization: "Q4_K_M",
+    tier: "32-48GB RAM",
+    spec: "hf:roleplaiapp/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M-GGUF/deepseek-r1-distill-qwen-32b-q4_k_m.gguf",
+    targetFile: "deepseek-r1-distill-qwen-32b-q4_k_m.gguf",
+    diskSizeGb: 19.9,
+    minimumRamGb: 32,
+    recommendedRamGb: 48,
+    recommendedVramGb: 20,
+    suitability: "Reasoning-focused DeepSeek distillation for math, code, and planning tasks.",
+    manualUrl: "https://huggingface.co/roleplaiapp/DeepSeek-R1-Distill-Qwen-32B-Q4_K_M-GGUF",
+    manualFile: "deepseek-r1-distill-qwen-32b-q4_k_m.gguf",
+  },
+  {
+    id: "llama-3.3-70b",
+    label: "Llama-3.3-70B-Instruct Q4_K_M",
+    family: "Llama",
+    quantization: "Q4_K_M",
+    tier: "64-96GB RAM",
+    spec: "hf:bartowski/Llama-3.3-70B-Instruct-GGUF:Q4_K_M",
+    targetFile: "llama-3.3-70b-instruct-q4_k_m.gguf",
+    diskSizeGb: 42.5,
+    minimumRamGb: 64,
+    recommendedRamGb: 96,
+    recommendedVramGb: 42,
+    suitability: "High-end Llama option for Mac Studio-class machines.",
+    manualUrl: "https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF",
+    manualFile: "Llama-3.3-70B-Instruct-Q4_K_M.gguf",
+  },
+  {
+    id: "deepseek-r1-llama-70b",
+    label: "DeepSeek-R1-Distill-Llama-70B Q4_K_M",
+    family: "DeepSeek",
+    quantization: "Q4_K_M",
+    tier: "64-96GB RAM",
+    spec: "hf:lmstudio-community/DeepSeek-R1-Distill-Llama-70B-GGUF:Q4_K_M",
+    targetFile: "deepseek-r1-distill-llama-70b-q4_k_m.gguf",
+    diskSizeGb: 42.5,
+    minimumRamGb: 64,
+    recommendedRamGb: 96,
+    recommendedVramGb: 42,
+    suitability: "Large reasoning-tuned DeepSeek distillation for high-memory Macs.",
+    manualUrl: "https://huggingface.co/lmstudio-community/DeepSeek-R1-Distill-Llama-70B-GGUF",
+    manualFile: "DeepSeek-R1-Distill-Llama-70B-Q4_K_M.gguf",
+  },
+  {
+    id: "gpt-oss-120b",
+    label: "gpt-oss-120b Q4_K_M",
+    family: "gpt-oss",
+    quantization: "Q4_K_M",
+    tier: "80-128GB RAM",
+    spec: "hf:unsloth/gpt-oss-120b-GGUF:Q4_K_M",
+    targetFile: "gpt-oss-120b-q4_k_m-00001-of-00002.gguf",
+    downloadFileName: "gpt-oss-120b-q4_k_m.gguf",
+    splitParts: 2,
+    diskSizeGb: 62.8,
+    minimumRamGb: 80,
+    recommendedRamGb: 128,
+    recommendedVramGb: 64,
+    suitability: "Large OpenAI open-weight reasoning model for top-end local systems.",
+    notes: "Split GGUF; all parts must stay in the same models directory.",
+    manualUrl: "https://huggingface.co/unsloth/gpt-oss-120b-GGUF",
+    manualFile: "Q4_K_M/gpt-oss-120b-Q4_K_M-00001-of-00002.gguf and 00002-of-00002.gguf",
+  },
+  {
+    id: "llama-4-scout",
+    label: "Llama-4-Scout-17B-16E-Instruct Q4_K_M",
+    family: "Llama",
+    quantization: "Q4_K_M",
+    tier: "96-128GB RAM",
+    spec: "hf:unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF:Q4_K_M",
+    targetFile: "llama-4-scout-17b-16e-instruct-q4_k_m-00001-of-00002.gguf",
+    downloadFileName: "llama-4-scout-17b-16e-instruct-q4_k_m.gguf",
+    splitParts: 2,
+    diskSizeGb: 65.3,
+    minimumRamGb: 96,
+    recommendedRamGb: 128,
+    recommendedVramGb: 64,
+    suitability: "High-end MoE Llama 4 option for 96GB-128GB unified-memory Macs.",
+    notes: "Split GGUF; all parts must stay in the same models directory.",
+    manualUrl: "https://huggingface.co/unsloth/Llama-4-Scout-17B-16E-Instruct-GGUF",
+    manualFile:
+      "Q4_K_M/Llama-4-Scout-17B-16E-Instruct-Q4_K_M-00001-of-00002.gguf and 00002-of-00002.gguf",
+  },
+  {
+    id: "mistral-large-2411",
+    label: "Mistral-Large-Instruct-2411 Q4_K_M",
+    family: "Mistral",
+    quantization: "Q4_K_M",
+    tier: "96-128GB RAM",
+    spec: "hf:bartowski/Mistral-Large-Instruct-2411-GGUF:Q4_K_M",
+    targetFile: "mistral-large-instruct-2411-q4_k_m-00001-of-00002.gguf",
+    downloadFileName: "mistral-large-instruct-2411-q4_k_m.gguf",
+    splitParts: 2,
+    diskSizeGb: 73.3,
+    minimumRamGb: 96,
+    recommendedRamGb: 128,
+    recommendedVramGb: 72,
+    suitability: "Very large multilingual Mistral model for top-end Mac Studio-class machines.",
+    notes: "Split GGUF; all parts must stay in the same models directory.",
+    manualUrl: "https://huggingface.co/bartowski/Mistral-Large-Instruct-2411-GGUF",
+    manualFile:
+      "Mistral-Large-Instruct-2411-Q4_K_M/Mistral-Large-Instruct-2411-Q4_K_M-00001-of-00002.gguf and 00002-of-00002.gguf",
   },
 ];
 
@@ -100,6 +370,8 @@ interface ModelSelection {
   label: string;
   spec: string;
   targetPath?: string;
+  downloadFileName?: string;
+  splitParts?: number;
   manualUrl?: string;
   manualFile?: string;
 }
@@ -220,9 +492,15 @@ export function printModelRecommendations(hardware: HardwareProfile): void {
   for (const model of CURATED_MODELS) {
     const fit = assessModelFit(model, hardware);
     console.log(`${model.id} [${fit}]`);
-    console.log(`  ${model.label} - ~${formatGb(model.diskSizeGb)} download`);
     console.log(
-      `  Memory: ${formatGb(model.minimumRamGb)}+ RAM minimum, ${formatGb(
+      `  ${model.label} - ${model.family ?? "Local GGUF"}${
+        model.quantization ? ` ${model.quantization}` : ""
+      } - ~${formatGb(model.diskSizeGb)} download`,
+    );
+    console.log(
+      `  Memory: ${model.tier ? `${model.tier}; ` : ""}${formatGb(
+        model.minimumRamGb,
+      )}+ RAM minimum, ${formatGb(
         model.recommendedRamGb,
       )}+ RAM recommended${
         model.recommendedVramGb != null
@@ -231,6 +509,12 @@ export function printModelRecommendations(hardware: HardwareProfile): void {
       }`,
     );
     console.log(`  ${model.suitability}`);
+    if (model.splitParts) {
+      console.log(`  Split GGUF: downloads ${model.splitParts} parts; keep them together.`);
+    }
+    if (model.notes) {
+      console.log(`  Note: ${model.notes}`);
+    }
     console.log(`  Command: personalmcp setup-model --model ${model.id}`);
     console.log("");
   }
@@ -241,7 +525,7 @@ async function resolveSelectedModel(selection: ModelSelection): Promise<string> 
     mkdirSync(MODELS_DIR, { recursive: true });
   }
 
-  if (selection.targetPath && existsSync(selection.targetPath)) {
+  if (selection.targetPath && allTargetPartsExist(selection.targetPath, selection.splitParts)) {
     console.error(`[setup-model] Model already exists at ${selection.targetPath}. Nothing to do.`);
     return selection.targetPath;
   }
@@ -253,10 +537,14 @@ async function resolveSelectedModel(selection: ModelSelection): Promise<string> 
     await getLlama();
     const downloadedPath = await resolveModelFile(selection.spec, {
       directory: MODELS_DIR,
-      fileName: selection.targetPath ? basename(selection.targetPath) : undefined,
+      fileName: selection.downloadFileName,
     });
 
-    if (selection.targetPath && resolve(downloadedPath) !== resolve(selection.targetPath)) {
+    if (
+      selection.targetPath &&
+      !selection.splitParts &&
+      resolve(downloadedPath) !== resolve(selection.targetPath)
+    ) {
       renameSync(downloadedPath, selection.targetPath);
       return selection.targetPath;
     }
@@ -274,9 +562,33 @@ function selectionFromCuratedModel(model: CuratedModel): ModelSelection {
     label: model.label,
     spec: model.spec,
     targetPath: join(MODELS_DIR, model.targetFile),
+    downloadFileName: model.downloadFileName ?? model.targetFile,
+    splitParts: model.splitParts,
     manualUrl: model.manualUrl,
     manualFile: model.manualFile,
   };
+}
+
+function allTargetPartsExist(targetPath: string, splitParts?: number): boolean {
+  if (!splitParts) {
+    return existsSync(targetPath);
+  }
+
+  return splitPartPaths(targetPath, splitParts).every((partPath) => existsSync(partPath));
+}
+
+function splitPartPaths(firstPartPath: string, splitParts: number): string[] {
+  const firstPart = basename(firstPartPath);
+  const match = firstPart.match(/^(?<prefix>.+)-00001-of-\d{5}\.gguf$/);
+  if (!match?.groups?.prefix) {
+    return [firstPartPath];
+  }
+
+  return Array.from({ length: splitParts }, (_, index) => {
+    const part = String(index + 1).padStart(5, "0");
+    const parts = String(splitParts).padStart(5, "0");
+    return join(dirname(firstPartPath), `${match.groups!.prefix}-${part}-of-${parts}.gguf`);
+  });
 }
 
 function getCuratedModel(id: string): CuratedModel {
@@ -321,7 +633,12 @@ function printManualDownloadInstructions(selection: ModelSelection): void {
   if (selection.manualUrl && selection.manualFile && selection.targetPath) {
     console.error(`1. Visit: ${selection.manualUrl}`);
     console.error(`2. Download: ${selection.manualFile}`);
-    console.error(`3. Save to: ${selection.targetPath}`);
+    if (selection.splitParts) {
+      console.error(`3. Save all parts under: ${dirname(selection.targetPath)}`);
+      console.error(`   Config should point to: ${selection.targetPath}`);
+    } else {
+      console.error(`3. Save to: ${selection.targetPath}`);
+    }
   } else {
     console.error(`1. Download a GGUF model from: ${selection.spec}`);
     console.error(`2. Save it under: ${MODELS_DIR}`);
@@ -341,7 +658,7 @@ function formatConfigModelPath(modelPath: string): string {
 
 function modelNameFromPath(modelPath: string): string {
   return basename(modelPath)
-    .replace(/\.gguf(?:\.part\d+of\d+)?$/i, "")
+    .replace(/(?:-\d{5}-of-\d{5})?\.gguf(?:\.part\d+of\d+)?$/i, "")
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "");

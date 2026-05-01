@@ -352,16 +352,38 @@ npx personalmcp setup-model --list-models
 Install a curated model by ID:
 
 ```bash
-npm run setup-model -- --model llama-3.2-3b --write-config
-npx personalmcp setup-model --model llama-3.2-3b --write-config
+npm run setup-model -- --model qwen3-14b --write-config
+npx personalmcp setup-model --model qwen3-14b --write-config
 ```
 
 `--write-config` updates only `llm.model` and `llm.model_path` in `config.yaml`. Without it, the
 command prints the exact config values to set manually.
 
+### Mac RAM guide
+
+The curated list uses GGUF files compatible with `node-llama-cpp`. Most options use Q4_K_M because
+it is a good balance of quality, size, and speed on Apple Silicon. A few tiny models use Q8_0 where
+the file is still small.
+
+Recommended starting points:
+
+| Mac memory | Try first | Notes |
+|---:|---|---|
+| 8 GB | `llama-3.2-3b`, `qwen3-4b` | Default remains Qwen3-4B; close other heavy apps. |
+| 16 GB | `qwen3-8b`, `phi-4`, `gpt-oss-20b` | Good laptop tier for stronger local answers. |
+| 32 GB | `mistral-small-3.2-24b`, `qwen3-32b` | Better quality, slower startup and generation. |
+| 64 GB | `llama-3.3-70b`, `deepseek-r1-llama-70b` | High-end dense 70B-class models. |
+| 96 GB | `gpt-oss-120b`, `llama-4-scout` | Split GGUF downloads; keep all parts together. |
+| 128 GB | `mistral-large-2411` | Top-end curated option for Mac Studio-class systems. |
+
+For 192 GB, 256 GB, or 512 GB Mac Studio machines, use custom Hugging Face GGUF URIs for larger
+models or higher-quality quantizations. The curated catalogue intentionally stops at models that are
+practical on 128 GB RAM; for example, Qwen3-235B-A22B Q4_K_M is about 142 GB before runtime overhead
+and is not included as a curated option.
+
 ### Smaller model (weaker machines)
 
-**Llama-3.2-3B-Instruct Q4_K_M** — ~2 GB, lower RAM requirement.
+**Llama-3.2-3B-Instruct Q4_K_M** - ~2 GB, lower RAM requirement.
 
 ```bash
 npm run setup-model -- --model llama-3.2-3b
@@ -375,10 +397,13 @@ Save as: `./models/llama-3.2-3b-instruct-q4_k_m.gguf`
 
 ```bash
 npx personalmcp setup-model --model hf:Qwen/Qwen3-8B-GGUF:Q4_K_M --write-config
+npx personalmcp setup-model --model hf:Qwen/Qwen3-235B-A22B-GGUF:Q4_K_M
 npx personalmcp setup-model --model https://huggingface.co/user/repo/resolve/main/model.gguf
 ```
 
-Only GGUF models supported by `node-llama-cpp` can be loaded by PersonalMCP.
+Only GGUF models supported by `node-llama-cpp` can be loaded by PersonalMCP. Split GGUF models are
+supported when the model URI resolves to the first `-00001-of-000NN.gguf` part; all downloaded parts
+must remain in the same directory.
 
 ---
 
