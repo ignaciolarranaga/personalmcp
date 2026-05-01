@@ -44,6 +44,16 @@ npx personalmcp memory export --format jsonl
 npx personalmcp memory import memory-backup.md
 ```
 
+Tip: if `npx personalmcp serve` fails with an error like `Could not locate the bindings file`
+for `better-sqlite3`, your npm config may be skipping native dependency install scripts. Retry with
+install scripts enabled only for that command:
+
+```bash
+npx --yes --ignore-scripts=false personalmcp serve
+```
+
+If the same error persists after retrying, clear npm's failed npx install cache and run the command again.
+
 ---
 
 ## GitHub Codespaces
