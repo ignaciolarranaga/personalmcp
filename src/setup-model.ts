@@ -431,15 +431,19 @@ async function selectBestModelForHardware(): Promise<ModelSelection> {
 
 export function selectBestCuratedModel(hardware: HardwareProfile): CuratedModel {
   const fallback = getCuratedModel(DEFAULT_MODEL_ID);
-  const recommendedModels = CURATED_MODELS.filter((model) => assessModelFit(model, hardware) === "recommended");
+  const recommendedModels = CURATED_MODELS.filter(
+    (model) => assessModelFit(model, hardware) === "recommended",
+  );
 
   if (recommendedModels.length === 0) {
     return fallback;
   }
 
-  return recommendedModels
-    .slice()
-    .sort((left, right) => compareBestModelCandidates(left, right, hardware))[0] ?? fallback;
+  return (
+    recommendedModels
+      .slice()
+      .sort((left, right) => compareBestModelCandidates(left, right, hardware))[0] ?? fallback
+  );
 }
 
 function compareBestModelCandidates(
@@ -545,9 +549,7 @@ export function printModelRecommendations(hardware: HardwareProfile): void {
     console.log(
       `  Memory: ${model.tier ? `${model.tier}; ` : ""}${formatGb(
         model.minimumRamGb,
-      )}+ RAM minimum, ${formatGb(
-        model.recommendedRamGb,
-      )}+ RAM recommended${
+      )}+ RAM minimum, ${formatGb(model.recommendedRamGb)}+ RAM recommended${
         model.recommendedVramGb != null
           ? `, ${formatGb(model.recommendedVramGb)}+ VRAM helpful`
           : ""
@@ -577,7 +579,9 @@ async function resolveSelectedModel(selection: ModelSelection): Promise<string> 
 
   try {
     console.error(`[setup-model] Resolving model: ${selection.spec}`);
-    console.error("[setup-model] This may take a while depending on your connection and model size.");
+    console.error(
+      "[setup-model] This may take a while depending on your connection and model size.",
+    );
 
     await getLlama();
     const downloadedPath = await resolveModelFile(selection.spec, {
@@ -662,7 +666,9 @@ function writeModelConfig(model: string, modelPath: string): void {
 }
 
 function printConfigInstructions(model: string, modelPath: string): void {
-  console.error("[setup-model] To use this model, update config.yaml or rerun with --write-config:");
+  console.error(
+    "[setup-model] To use this model, update config.yaml or rerun with --write-config:",
+  );
   console.error("llm:");
   console.error(`  model: ${model}`);
   console.error(`  model_path: ${modelPath}`);

@@ -374,14 +374,14 @@ the file is still small.
 
 Recommended starting points:
 
-| Mac memory | Try first | Notes |
-|---:|---|---|
-| 8 GB | `llama-3.2-3b` | `qwen3-4b` remains a good explicit fallback. |
-| 16 GB | `qwen3-8b` | Good laptop tier for stronger local answers. |
-| 32 GB | `mistral-small-3.2-24b` | Better quality, slower startup and generation. |
-| 64 GB | `deepseek-r1-qwen-32b` | Avoids 70B models unless they are comfortably recommended. |
-| 96 GB | `llama-3.3-70b`, `deepseek-r1-llama-70b` | High-end dense 70B-class models. |
-| 128 GB | `mistral-large-2411` | Split GGUF top-end curated option for Mac Studio-class systems. |
+| Mac memory | Try first                                | Notes                                                           |
+| ---------: | ---------------------------------------- | --------------------------------------------------------------- |
+|       8 GB | `llama-3.2-3b`                           | `qwen3-4b` remains a good explicit fallback.                    |
+|      16 GB | `qwen3-8b`                               | Good laptop tier for stronger local answers.                    |
+|      32 GB | `mistral-small-3.2-24b`                  | Better quality, slower startup and generation.                  |
+|      64 GB | `deepseek-r1-qwen-32b`                   | Avoids 70B models unless they are comfortably recommended.      |
+|      96 GB | `llama-3.3-70b`, `deepseek-r1-llama-70b` | High-end dense 70B-class models.                                |
+|     128 GB | `mistral-large-2411`                     | Split GGUF top-end curated option for Mac Studio-class systems. |
 
 For 192 GB, 256 GB, or 512 GB Mac Studio machines, use custom Hugging Face GGUF URIs for larger
 models or higher-quality quantizations. The curated catalogue intentionally stops at models that are
@@ -398,7 +398,7 @@ npx personalmcp setup-model --model llama-3.2-3b
 ```
 
 Manual download: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF  
-Save as: `./models/llama-3.2-3b-instruct-q4_k_m.gguf`  
+Save as: `./models/llama-3.2-3b-instruct-q4_k_m.gguf`
 
 ### Custom Hugging Face or HTTP GGUF model
 

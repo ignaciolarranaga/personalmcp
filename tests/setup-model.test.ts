@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import yaml from "js-yaml";
@@ -140,10 +147,13 @@ describe("setup-model", () => {
 
     await setupModel({ model: "gpt-oss-120b", listModels: false, writeConfig: true });
 
-    expect(llamaMocks.resolveModelFile).toHaveBeenCalledWith("hf:unsloth/gpt-oss-120b-GGUF:Q4_K_M", {
-      directory: join(tempDir, "models"),
-      fileName: "gpt-oss-120b-q4_k_m.gguf",
-    });
+    expect(llamaMocks.resolveModelFile).toHaveBeenCalledWith(
+      "hf:unsloth/gpt-oss-120b-GGUF:Q4_K_M",
+      {
+        directory: join(tempDir, "models"),
+        fileName: "gpt-oss-120b-q4_k_m.gguf",
+      },
+    );
     expect(existsSync(join(tempDir, "models", "gpt-oss-120b-q4_k_m.gguf"))).toBe(false);
     expect(readConfig()).toMatchObject({
       llm: {
