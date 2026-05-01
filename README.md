@@ -530,9 +530,3 @@ User → Claude Desktop → ask(
 - Keep your memory password safe. If it is lost, encrypted memory cannot be recovered.
 - Private memory is not exposed when `audience` is `public` or `unknown`.
 - No shell execution tools are exposed through MCP.
-
----
-
-## License
-
-MIT
