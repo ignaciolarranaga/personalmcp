@@ -14,7 +14,9 @@ export interface MemoryCommandOptions extends CommonCommandOptions {
 }
 
 export interface SetupModelCommandOptions {
-  fallback: boolean;
+  model?: string;
+  listModels: boolean;
+  writeConfig: boolean;
 }
 
 export interface CliHandlers {
@@ -68,10 +70,16 @@ export function createCliProgram(handlers: CliHandlers): Command {
 
   program
     .command("setup-model")
-    .description("Download the default local GGUF model")
-    .option("--fallback", "Download the smaller fallback model")
+    .description("Download a local GGUF model")
+    .option("--model <model>", "Curated model ID, Hugging Face URI, or GGUF URL")
+    .option("--list-models", "List curated model recommendations")
+    .option("--write-config", "Update config.yaml to use the downloaded model")
     .action(async (options: CommanderSetupModelOptions) => {
-      await handlers.setupModel({ fallback: options.fallback === true });
+      await handlers.setupModel({
+        model: options.model,
+        listModels: options.listModels === true,
+        writeConfig: options.writeConfig === true,
+      });
     });
 
   return program;
@@ -96,7 +104,9 @@ interface CommanderMemoryOptions extends CommanderCommonOptions {
 }
 
 interface CommanderSetupModelOptions {
-  fallback?: boolean;
+  model?: string;
+  listModels?: boolean;
+  writeConfig?: boolean;
 }
 
 function toCommonOptions(options: CommanderCommonOptions): CommonCommandOptions {

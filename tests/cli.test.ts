@@ -75,6 +75,33 @@ describe("CLI", () => {
       exitCode: 1,
     });
   });
+
+  it("parses setup-model options", async () => {
+    const { handlers, program } = makeTestProgram();
+
+    await runCliProgram(program, [
+      "setup-model",
+      "--model",
+      "llama-3.2-3b",
+      "--list-models",
+      "--write-config",
+    ]);
+
+    expect(handlers.setupModel).toHaveBeenCalledWith({
+      model: "llama-3.2-3b",
+      listModels: true,
+      writeConfig: true,
+    });
+  });
+
+  it("rejects the removed fallback option", async () => {
+    const { program } = makeTestProgram();
+
+    await expect(runCliProgram(program, ["setup-model", "--fallback"])).rejects.toMatchObject({
+      code: "commander.unknownOption",
+      exitCode: 1,
+    });
+  });
 });
 
 function makeTestProgram() {

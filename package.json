@@ -24,7 +24,7 @@
     "test:watch": "vitest",
     "dev": "node dist/index.js serve",
     "start": "node dist/index.js serve",
-    "setup:model": "node dist/index.js setup-model",
+    "setup-model": "node dist/index.js setup-model",
     "memory": "node dist/index.js memory"
   },
   "dependencies": {

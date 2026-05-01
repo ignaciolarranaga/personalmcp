@@ -21,7 +21,7 @@ No cloud API required. Memory is stored in an encrypted SQLite database on disk.
 
 ```bash
 npm install
-npm run setup:model   # downloads Qwen3-4B-Instruct (~2.5 GB)
+npm run setup-model   # downloads Qwen3-4B-Instruct (~2.5 GB)
 npm run build
 npm start             # starts the MCP server on http://localhost:3000/mcp
 npm start -- --debug  # optional: logs MCP calls and LLM prompt/output snippets
@@ -72,7 +72,7 @@ npm run build
 After the Codespace is ready, download the local model explicitly:
 
 ```bash
-npm run setup:model
+npm run setup-model
 ```
 
 The model is about 2.5 GB and is stored in `./models/`, which is ignored by Git. Codespaces should
@@ -333,25 +333,52 @@ safety:
 **Qwen3-4B-Instruct Q4_K_M** — ~2.5 GB, strong instruction following, multilingual.
 
 ```bash
-npm run setup:model
+npm run setup-model
 npx personalmcp setup-model
 ```
 
 Manual download: https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF  
 Save as: `./models/qwen3-4b-instruct-q4_k_m.gguf`
 
-### Fallback model (weaker machines)
+### Choose a model
+
+List curated GGUF models with RAM/VRAM-aware recommendations:
+
+```bash
+npm run setup-model -- --list-models
+npx personalmcp setup-model --list-models
+```
+
+Install a curated model by ID:
+
+```bash
+npm run setup-model -- --model llama-3.2-3b --write-config
+npx personalmcp setup-model --model llama-3.2-3b --write-config
+```
+
+`--write-config` updates only `llm.model` and `llm.model_path` in `config.yaml`. Without it, the
+command prints the exact config values to set manually.
+
+### Smaller model (weaker machines)
 
 **Llama-3.2-3B-Instruct Q4_K_M** — ~2 GB, lower RAM requirement.
 
 ```bash
-npm run setup:model -- --fallback
-npx personalmcp setup-model --fallback
+npm run setup-model -- --model llama-3.2-3b
+npx personalmcp setup-model --model llama-3.2-3b
 ```
 
 Manual download: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF  
 Save as: `./models/llama-3.2-3b-instruct-q4_k_m.gguf`  
-Then update `config.yaml`: set `llm.model_path` to `./models/llama-3.2-3b-instruct-q4_k_m.gguf`
+
+### Custom Hugging Face or HTTP GGUF model
+
+```bash
+npx personalmcp setup-model --model hf:Qwen/Qwen3-8B-GGUF:Q4_K_M --write-config
+npx personalmcp setup-model --model https://huggingface.co/user/repo/resolve/main/model.gguf
+```
+
+Only GGUF models supported by `node-llama-cpp` can be loaded by PersonalMCP.
 
 ---
 
@@ -412,7 +439,7 @@ git push --tags
 
 ```bash
 npm install
-npm run setup:model
+npm run setup-model
 npm run build
 npm start
 ```
