@@ -42,17 +42,42 @@ describe("setup-model", () => {
 
   afterEach(() => {
     process.chdir(originalCwd);
+    vi.doUnmock("node:os");
     consoleError.mockRestore();
     consoleLog.mockRestore();
   });
 
-  it("downloads the default model with its stable target filename", async () => {
+  it("automatically selects the best model by default", async () => {
+    mockSystemMemory(16, 10);
+    llamaMocks.getVramState.mockResolvedValue({
+      total: 0,
+      free: 0,
+      unifiedSize: 0,
+    });
     const { setupModel } = await import("../src/setup-model.js");
-    const expectedPath = join(tempDir, "models", "qwen3-4b-instruct-q4_k_m.gguf");
+    const expectedPath = join(tempDir, "models", "qwen3-8b-q4_k_m.gguf");
     llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
 
     await setupModel({ listModels: false, writeConfig: false });
 
+    expect(llamaMocks.resolveModelFile).toHaveBeenCalledWith("hf:Qwen/Qwen3-8B-GGUF:Q4_K_M", {
+      directory: join(tempDir, "models"),
+      fileName: "qwen3-8b-q4_k_m.gguf",
+    });
+    expect(consoleError).toHaveBeenCalledWith(
+      "[setup-model] Selected model for this machine: qwen3-8b (Qwen3-8B Q4_K_M)",
+    );
+  });
+
+  it("lets explicit curated model IDs bypass automatic selection", async () => {
+    mockSystemMemory(128, 96);
+    const { setupModel } = await import("../src/setup-model.js");
+    const expectedPath = join(tempDir, "models", "qwen3-4b-instruct-q4_k_m.gguf");
+    llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
+
+    await setupModel({ model: "qwen3-4b", listModels: false, writeConfig: false });
+
+    expect(llamaMocks.getVramState).not.toHaveBeenCalled();
     expect(llamaMocks.resolveModelFile).toHaveBeenCalledWith(
       "hf:unsloth/Qwen3-4B-Instruct-2507-GGUF/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
       {
@@ -239,6 +264,22 @@ describe("setup-model", () => {
     expect(output).toContain("Split GGUF: downloads 2 parts; keep them together.");
   });
 
+  it("selects best curated models for representative RAM-only machines", async () => {
+    const { selectBestCuratedModel } = await import("../src/setup-model.js");
+
+    expect(selectBestCuratedModel(makeHardware(8)).id).toBe("llama-3.2-3b");
+    expect(selectBestCuratedModel(makeHardware(16)).id).toBe("qwen3-8b");
+    expect(selectBestCuratedModel(makeHardware(32)).id).toBe("mistral-small-3.2-24b");
+    expect(selectBestCuratedModel(makeHardware(64)).id).toBe("deepseek-r1-qwen-32b");
+    expect(selectBestCuratedModel(makeHardware(128)).id).toBe("mistral-large-2411");
+  });
+
+  it("falls back to qwen3-4b when no curated model is recommended", async () => {
+    const { selectBestCuratedModel } = await import("../src/setup-model.js");
+
+    expect(selectBestCuratedModel(makeHardware(2)).id).toBe("qwen3-4b");
+  });
+
   it("falls back to RAM-only hardware detection when VRAM detection fails", async () => {
     llamaMocks.getLlama.mockRejectedValue(new Error("no backend"));
     const { detectHardwareProfile } = await import("../src/setup-model.js");
@@ -250,6 +291,25 @@ describe("setup-model", () => {
     expect(hardware.vramDetectionError).toBe("no backend");
   });
 });
+
+function mockSystemMemory(totalRamGb: number, freeRamGb: number): void {
+  vi.doMock("node:os", async () => {
+    const actual = await vi.importActual<typeof import("node:os")>("node:os");
+    return {
+      ...actual,
+      totalmem: () => totalRamGb * gib,
+      freemem: () => freeRamGb * gib,
+    };
+  });
+}
+
+function makeHardware(totalRamGb: number) {
+  return {
+    totalRamGb,
+    freeRamGb: totalRamGb * 0.75,
+    gpuAvailable: false,
+  };
+}
 
 function readConfig() {
   return yaml.load(readFileSync(join(tempDirForRead(), "config.yaml"), "utf-8"));

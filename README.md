@@ -328,17 +328,24 @@ safety:
 
 ## Model Setup
 
-### Default model (recommended)
+### Default model selection
 
-**Qwen3-4B-Instruct Q4_K_M** — ~2.5 GB, strong instruction following, multilingual.
+By default, setup detects your machine and downloads the strongest curated model that is comfortably
+recommended for the available RAM/VRAM:
 
 ```bash
 npm run setup-model
 npx personalmcp setup-model
 ```
 
-Manual download: https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF  
-Save as: `./models/qwen3-4b-instruct-q4_k_m.gguf`
+Use an explicit model ID when you want to override automatic selection:
+
+```bash
+npm run setup-model -- --model qwen3-4b
+npx personalmcp setup-model --model qwen3-4b
+```
+
+`qwen3-4b` is the safe fallback model if no curated model is recommended for the detected machine.
 
 ### Choose a model
 
@@ -369,12 +376,12 @@ Recommended starting points:
 
 | Mac memory | Try first | Notes |
 |---:|---|---|
-| 8 GB | `llama-3.2-3b`, `qwen3-4b` | Default remains Qwen3-4B; close other heavy apps. |
-| 16 GB | `qwen3-8b`, `phi-4`, `gpt-oss-20b` | Good laptop tier for stronger local answers. |
-| 32 GB | `mistral-small-3.2-24b`, `qwen3-32b` | Better quality, slower startup and generation. |
-| 64 GB | `llama-3.3-70b`, `deepseek-r1-llama-70b` | High-end dense 70B-class models. |
-| 96 GB | `gpt-oss-120b`, `llama-4-scout` | Split GGUF downloads; keep all parts together. |
-| 128 GB | `mistral-large-2411` | Top-end curated option for Mac Studio-class systems. |
+| 8 GB | `llama-3.2-3b` | `qwen3-4b` remains a good explicit fallback. |
+| 16 GB | `qwen3-8b` | Good laptop tier for stronger local answers. |
+| 32 GB | `mistral-small-3.2-24b` | Better quality, slower startup and generation. |
+| 64 GB | `deepseek-r1-qwen-32b` | Avoids 70B models unless they are comfortably recommended. |
+| 96 GB | `llama-3.3-70b`, `deepseek-r1-llama-70b` | High-end dense 70B-class models. |
+| 128 GB | `mistral-large-2411` | Split GGUF top-end curated option for Mac Studio-class systems. |
 
 For 192 GB, 256 GB, or 512 GB Mac Studio machines, use custom Hugging Face GGUF URIs for larger
 models or higher-quality quantizations. The curated catalogue intentionally stops at models that are

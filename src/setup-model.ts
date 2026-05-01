@@ -382,7 +382,7 @@ export async function setupModel(options: SetupModelOptions): Promise<void> {
     return;
   }
 
-  const selection = selectModel(options.model);
+  const selection = options.model ? selectModel(options.model) : await selectBestModelForHardware();
   console.error(`[setup-model] Setting up ${selection.label}...`);
   console.error(
     selection.targetPath
@@ -419,6 +419,51 @@ export function selectModel(model?: string): ModelSelection {
     label: model,
     spec: model,
   };
+}
+
+async function selectBestModelForHardware(): Promise<ModelSelection> {
+  const hardware = await detectHardwareProfile();
+  const model = selectBestCuratedModel(hardware);
+  console.error(`[setup-model] Detected hardware: ${formatHardwareSummary(hardware)}`);
+  console.error(`[setup-model] Selected model for this machine: ${model.id} (${model.label})`);
+  return selectionFromCuratedModel(model);
+}
+
+export function selectBestCuratedModel(hardware: HardwareProfile): CuratedModel {
+  const fallback = getCuratedModel(DEFAULT_MODEL_ID);
+  const recommendedModels = CURATED_MODELS.filter((model) => assessModelFit(model, hardware) === "recommended");
+
+  if (recommendedModels.length === 0) {
+    return fallback;
+  }
+
+  return recommendedModels
+    .slice()
+    .sort((left, right) => compareBestModelCandidates(left, right, hardware))[0] ?? fallback;
+}
+
+function compareBestModelCandidates(
+  left: CuratedModel,
+  right: CuratedModel,
+  hardware: HardwareProfile,
+): number {
+  const ramTierDifference = right.recommendedRamGb - left.recommendedRamGb;
+  if (ramTierDifference !== 0) {
+    return ramTierDifference;
+  }
+
+  if (hardware.totalRamGb < 128) {
+    const splitDifference = splitPenalty(left) - splitPenalty(right);
+    if (splitDifference !== 0) {
+      return splitDifference;
+    }
+  }
+
+  return right.diskSizeGb - left.diskSizeGb;
+}
+
+function splitPenalty(model: CuratedModel): number {
+  return model.splitParts ? 1 : 0;
 }
 
 export function assessModelFit(model: CuratedModel, hardware: HardwareProfile): ModelFit {
@@ -670,4 +715,18 @@ function bytesToGb(bytes: number): number {
 
 function formatGb(value: number): string {
   return `${Math.round(value * 10) / 10} GB`;
+}
+
+function formatHardwareSummary(hardware: HardwareProfile): string {
+  const ramSummary = `${formatGb(hardware.totalRamGb)} RAM total, ${formatGb(hardware.freeRamGb)} RAM free`;
+
+  if (hardware.gpuAvailable) {
+    return `${ramSummary}; ${formatGb(hardware.totalVramGb ?? 0)} VRAM total, ${formatGb(
+      hardware.freeVramGb ?? 0,
+    )} VRAM free`;
+  }
+
+  return `${ramSummary}; GPU memory unavailable${
+    hardware.vramDetectionError ? ` (${hardware.vramDetectionError})` : ""
+  }`;
 }
