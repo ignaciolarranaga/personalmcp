@@ -29,12 +29,16 @@ No cloud API required.
 ## Quick Start
 
 ```bash
-npm install
+npm install --ignore-scripts=false
 npm run setup-model   # downloads Qwen3-4B-Instruct (~2.5 GB)
 npm run build
 npm start             # starts the MCP server on http://localhost:3000/mcp
 npm start -- --debug  # optional: logs MCP calls and LLM prompt/output snippets
 ```
+
+The install command explicitly enables npm install scripts because AIProfile uses native
+dependencies, including `better-sqlite3` for encrypted SQLite storage and local model runtime
+packages. If your npm config disables scripts globally, those native bindings may not be installed.
 
 The first `npm start` asks you to create a memory password. AIProfile uses that password to
 initialize encrypted storage automatically. Remember it or store it securely; encrypted memory
@@ -69,9 +73,9 @@ examples.
 After the package is published, you can use the same commands without cloning the repository:
 
 ```bash
-npx aiprofile setup-model
-npx aiprofile serve
-npx aiprofile auth token \
+npx --yes --ignore-scripts=false aiprofile setup-model
+npx --yes --ignore-scripts=false aiprofile serve
+npx --yes --ignore-scripts=false aiprofile auth token \
   --scope aiprofile:ask \
   --scope aiprofile:ingest \
   --scope aiprofile:suggest \
@@ -79,19 +83,12 @@ npx aiprofile auth token \
   --scope memory:read:personal \
   --scope memory:read:secret \
   --scope memory:read:kind:*
-npx aiprofile memory export --format jsonl
-npx aiprofile memory import memory-backup.md
+npx --yes --ignore-scripts=false aiprofile memory export --format jsonl
+npx --yes --ignore-scripts=false aiprofile memory import memory-backup.md
 ```
 
-Tip: if `npx aiprofile serve` fails with an error like `Could not locate the bindings file`
-for `better-sqlite3`, your npm config may be skipping native dependency install scripts. Retry with
-install scripts enabled only for that command:
-
-```bash
-npx --yes --ignore-scripts=false aiprofile serve
-```
-
-If the same error persists after retrying, clear npm's failed npx install cache and run the command again.
+The `--ignore-scripts=false` flag is intentional. It avoids missing native bindings when your user
+or environment npm config disables install scripts.
 
 ---
 
@@ -348,19 +345,19 @@ subcommand:
 ```bash
 # Export all active records to Markdown (stdout)
 npm run memory -- export
-npx aiprofile memory export
+npx --yes --ignore-scripts=false aiprofile memory export
 
 # Export as JSON Lines
 npm run memory -- export --format=jsonl
-npx aiprofile memory export --format jsonl
+npx --yes --ignore-scripts=false aiprofile memory export --format jsonl
 
 # Import from a previously exported Markdown file
 npm run memory -- import memory-backup.md
-npx aiprofile memory import memory-backup.md
+npx --yes --ignore-scripts=false aiprofile memory import memory-backup.md
 
 # Supply the memory password non-interactively when exporting
 npm run memory -- export --password-file ./local-password-file
-npx aiprofile memory export --password-file ./local-password-file
+npx --yes --ignore-scripts=false aiprofile memory export --password-file ./local-password-file
 ```
 
 ---
@@ -409,14 +406,14 @@ recommended for the available RAM/VRAM:
 
 ```bash
 npm run setup-model
-npx aiprofile setup-model
+npx --yes --ignore-scripts=false aiprofile setup-model
 ```
 
 Use an explicit model ID when you want to override automatic selection:
 
 ```bash
 npm run setup-model -- --model qwen3-4b
-npx aiprofile setup-model --model qwen3-4b
+npx --yes --ignore-scripts=false aiprofile setup-model --model qwen3-4b
 ```
 
 `qwen3-4b` is the safe fallback model if no curated model is recommended for the detected machine.
@@ -427,14 +424,14 @@ List curated GGUF models with RAM/VRAM-aware recommendations:
 
 ```bash
 npm run setup-model -- --list-models
-npx aiprofile setup-model --list-models
+npx --yes --ignore-scripts=false aiprofile setup-model --list-models
 ```
 
 Install a curated model by ID:
 
 ```bash
 npm run setup-model -- --model qwen3-14b --write-config
-npx aiprofile setup-model --model qwen3-14b --write-config
+npx --yes --ignore-scripts=false aiprofile setup-model --model qwen3-14b --write-config
 ```
 
 `--write-config` updates only `llm.model` and `llm.model_path` in `config.yaml`. Without it, the
@@ -468,7 +465,7 @@ and is not included as a curated option.
 
 ```bash
 npm run setup-model -- --model llama-3.2-3b
-npx aiprofile setup-model --model llama-3.2-3b
+npx --yes --ignore-scripts=false aiprofile setup-model --model llama-3.2-3b
 ```
 
 Manual download: https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF  
@@ -477,9 +474,9 @@ Save as: `./models/llama-3.2-3b-instruct-q4_k_m.gguf`
 ### Custom Hugging Face or HTTP GGUF model
 
 ```bash
-npx aiprofile setup-model --model hf:Qwen/Qwen3-8B-GGUF:Q4_K_M --write-config
-npx aiprofile setup-model --model hf:Qwen/Qwen3-235B-A22B-GGUF:Q4_K_M
-npx aiprofile setup-model --model https://huggingface.co/user/repo/resolve/main/model.gguf
+npx --yes --ignore-scripts=false aiprofile setup-model --model hf:Qwen/Qwen3-8B-GGUF:Q4_K_M --write-config
+npx --yes --ignore-scripts=false aiprofile setup-model --model hf:Qwen/Qwen3-235B-A22B-GGUF:Q4_K_M
+npx --yes --ignore-scripts=false aiprofile setup-model --model https://huggingface.co/user/repo/resolve/main/model.gguf
 ```
 
 Only GGUF models supported by `node-llama-cpp` can be loaded by AIProfile. Split GGUF models are
@@ -495,14 +492,14 @@ the memory password through an environment variable:
 
 ```bash
 AIPROFILE_PASSWORD='your memory password' npm start
-AIPROFILE_PASSWORD='your memory password' npx aiprofile serve
+AIPROFILE_PASSWORD='your memory password' npx --yes --ignore-scripts=false aiprofile serve
 ```
 
 Or store the password in a local file and pass the file path:
 
 ```bash
 npm start -- --password-file ./local-password-file
-npx aiprofile serve --password-file ./local-password-file
+npx --yes --ignore-scripts=false aiprofile serve --password-file ./local-password-file
 ```
 
 Keep password files outside version control.
@@ -584,11 +581,11 @@ git push --tags
 9. Smoke test from source or npm:
 
 ```bash
-npm install
+npm install --ignore-scripts=false
 npm run setup-model
 npm run build
 npm start
-npx aiprofile --help
+npx --yes --ignore-scripts=false aiprofile --help
 ```
 
 Confirm the MCP endpoint works at `http://localhost:3000/mcp` with MCP Inspector or another MCP client.
