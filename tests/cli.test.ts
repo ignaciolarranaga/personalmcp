@@ -95,12 +95,17 @@ describe("CLI", () => {
     });
   });
 
-  it("parses auth token options", async () => {
+  it("parses auth grant add options", async () => {
     const { handlers, program } = makeTestProgram();
 
     await runCliProgram(program, [
       "auth",
-      "token",
+      "grant",
+      "add",
+      "--subject",
+      "ignaciolarranaga",
+      "--preset",
+      "owner-full",
       "--scope",
       "aiprofile:ask",
       "--scope",
@@ -113,12 +118,31 @@ describe("CLI", () => {
       "./local-password-file",
     ]);
 
-    expect(handlers.issueAuthToken).toHaveBeenCalledWith({
+    expect(handlers.addAuthGrant).toHaveBeenCalledWith({
       debugEnabled: false,
       passwordFile: "./local-password-file",
+      subject: "ignaciolarranaga",
+      label: undefined,
       scopes: ["aiprofile:ask", "aiprofile:ingest"],
+      presets: ["owner-full"],
       expiresIn: "24h",
       resource: "http://localhost:3000/mcp",
+    });
+  });
+
+  it("parses auth grant list and revoke", async () => {
+    const { handlers, program } = makeTestProgram();
+
+    await runCliProgram(program, ["auth", "grant", "list"]);
+    await runCliProgram(program, ["auth", "grant", "revoke", "grant_123", "--debug"]);
+
+    expect(handlers.listAuthGrants).toHaveBeenCalledWith({
+      debugEnabled: false,
+      passwordFile: undefined,
+    });
+    expect(handlers.revokeAuthGrant).toHaveBeenCalledWith("grant_123", {
+      debugEnabled: true,
+      passwordFile: undefined,
     });
   });
 
@@ -136,7 +160,9 @@ function makeTestProgram() {
   let capturedOutput = "";
   const handlers: CliHandlers = {
     serve: vi.fn(async () => undefined),
-    issueAuthToken: vi.fn(async () => undefined),
+    addAuthGrant: vi.fn(async () => undefined),
+    listAuthGrants: vi.fn(async () => undefined),
+    revokeAuthGrant: vi.fn(async () => undefined),
     exportMemory: vi.fn(async () => undefined),
     importMemory: vi.fn(async () => undefined),
     setupModel: vi.fn(async () => undefined),

@@ -19,7 +19,7 @@ features:
   - title: Local-first memory
     details: Extract memory with a local GGUF model and store it in encrypted SQLite by default.
   - title: MCP-native access
-    details: Expose ask, ingest, and suggestion tools to MCP-compatible clients with scoped Bearer tokens.
+    details: Expose ask, ingest, and suggestion tools to MCP-compatible clients with scoped OAuth grants.
 ---
 
 ## Start here

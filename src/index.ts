@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 import { createCliProgram, runCliProgram } from "./cli.js";
-import { issueAuthToken } from "./commands/auth-token.js";
+import { addAuthGrant, listAuthGrants, revokeAuthGrantById } from "./commands/auth-grants.js";
 import { startServer } from "./commands/serve.js";
 import { setupModel } from "./commands/setup-model.js";
 import { exportMemory, importMemory } from "./memory.js";
 
 const program = createCliProgram({
   serve: startServer,
-  issueAuthToken,
+  addAuthGrant,
+  listAuthGrants,
+  revokeAuthGrant: revokeAuthGrantById,
   exportMemory,
   importMemory,
   setupModel,

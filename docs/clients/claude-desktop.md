@@ -29,4 +29,10 @@ Add AIProfile:
 
 Save and restart Claude Desktop. The `aiprofile` server will appear in the tools panel.
 
-Unauthenticated access is limited to public-safe `ask`. Configure an `Authorization: Bearer <token>` header where supported for owner-level access.
+Create an OAuth grant:
+
+```bash
+npm run auth -- grant add --subject claude-desktop --preset owner-full
+```
+
+When Claude Desktop opens the AIProfile authorization page, enter the printed one-time approval code. Desktop-local use can normally keep `http://localhost:3000/mcp`; use ngrok only when the client connects from a remote service instead of the desktop app.

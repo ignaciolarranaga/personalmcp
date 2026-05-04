@@ -1,8 +1,6 @@
-# Claude Custom Connector with ngrok
+# Local Server With ngrok
 
-Claude custom connectors are remote MCP connections. Claude connects from Anthropic's cloud infrastructure, so `localhost` URLs do not work there.
-
-To test AIProfile as a custom connector while still running it locally, expose the local HTTP server through ngrok.
+Web-hosted MCP clients such as ChatGPT connectors and Claude custom connectors connect from cloud infrastructure, so `localhost` URLs do not work there. Use ngrok or an equivalent tunnel to run AIProfile on your desktop while exposing a public HTTPS endpoint.
 
 Start AIProfile:
 
@@ -23,12 +21,39 @@ ngrok prints a public HTTPS forwarding URL, for example:
 https://abc123.ngrok-free.app -> http://localhost:3000
 ```
 
-Add the MCP endpoint path when configuring Claude:
+Configure AIProfile:
+
+```yaml
+auth:
+  mode: local
+  anonymous_enabled: true
+  issuer: https://abc123.ngrok-free.app
+  resource: https://abc123.ngrok-free.app/mcp
+```
+
+Restart AIProfile after changing `config.yaml`.
+
+Create a grant bound to the public MCP URL:
+
+```bash
+npm run auth -- grant add \
+  --subject chatgpt-owner \
+  --preset owner-full \
+  --resource https://abc123.ngrok-free.app/mcp
+```
+
+Use this MCP URL in the remote client:
 
 ```text
 https://abc123.ngrok-free.app/mcp
 ```
 
-ngrok provides the public HTTPS certificate and forwards traffic to the local HTTP server, so AIProfile does not need built-in HTTPS for this flow.
+The client discovers OAuth metadata and opens the AIProfile authorization page. Enter the printed one-time approval code.
 
-Public tunnels should use a Bearer token. Anonymous access is intentionally limited to public-safe `ask`. Stop the ngrok process when you are done testing.
+Security notes:
+
+- Restart AIProfile and create a new grant whenever the tunnel URL changes.
+- Keep public tunnels open only while needed.
+- Prefer narrow presets such as `public-read` for testing.
+- Revoke grants when testing is done.
+- Never expose `auth.mode: off` through a public tunnel.

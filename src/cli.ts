@@ -10,7 +10,10 @@ export interface CommonCommandOptions {
 export type ServeCommandOptions = CommonCommandOptions;
 
 export interface AuthTokenCommandOptions extends CommonCommandOptions {
+  subject: string;
+  label?: string;
   scopes: string[];
+  presets: Array<"public-read" | "owner-read" | "maintainer" | "owner-full">;
   expiresIn: string;
   resource?: string;
 }
@@ -27,7 +30,9 @@ export interface SetupModelCommandOptions {
 
 export interface CliHandlers {
   serve: (options: ServeCommandOptions) => Promise<void>;
-  issueAuthToken: (options: AuthTokenCommandOptions) => Promise<void>;
+  addAuthGrant: (options: AuthTokenCommandOptions) => Promise<void>;
+  listAuthGrants: (options: CommonCommandOptions) => Promise<void>;
+  revokeAuthGrant: (grantId: string, options: CommonCommandOptions) => Promise<void>;
   exportMemory: (options: MemoryCommandOptions) => Promise<void>;
   importMemory: (filePath: string, options: MemoryCommandOptions) => Promise<void>;
   setupModel: (options: SetupModelCommandOptions) => Promise<void>;
@@ -54,18 +59,46 @@ export function createCliProgram(handlers: CliHandlers): Command {
       await handlers.serve(toCommonOptions(options));
     });
 
-  const auth = program.command("auth").description("Create local Bearer tokens for MCP auth");
+  const auth = program.command("auth").description("Manage OAuth grants for MCP auth");
+  const authGrant = auth.command("grant").description("Manage local OAuth grants");
 
-  auth
-    .command("token")
-    .description("Issue a scoped Bearer token using the memory master password")
+  authGrant
+    .command("add")
+    .description("Create an OAuth grant and print its one-time approval code")
+    .requiredOption("--subject <label>", "Human-readable local subject label")
+    .option("--label <name>", "Optional grant label")
     .option("--scope <scope>", "Scope to grant. Repeat for multiple scopes.", collectScope, [])
-    .option("--expires-in <duration>", "Token lifetime, e.g. 24h or 30d", "30d")
-    .option("--resource <url>", "MCP resource URL this token may access")
+    .option(
+      "--preset <preset>",
+      "Grant preset: public-read, owner-read, maintainer, owner-full. Repeat for multiple presets.",
+      collectPreset,
+      [],
+    )
+    .option("--expires-in <duration>", "Grant lifetime, e.g. 24h or 30d", "30d")
+    .option("--resource <url>", "MCP resource URL this grant may access")
     .option("--debug", "Enable debug logging")
     .option("--password-file <path>", "Read memory password from file")
     .action(async (options: CommanderAuthTokenOptions) => {
-      await handlers.issueAuthToken(toAuthTokenOptions(options));
+      await handlers.addAuthGrant(toAuthTokenOptions(options));
+    });
+
+  authGrant
+    .command("list")
+    .description("List OAuth grants")
+    .option("--debug", "Enable debug logging")
+    .option("--password-file <path>", "Read memory password from file")
+    .action(async (options: CommanderCommonOptions) => {
+      await handlers.listAuthGrants(toCommonOptions(options));
+    });
+
+  authGrant
+    .command("revoke")
+    .description("Revoke an OAuth grant")
+    .argument("<grant-id>", "Grant ID to revoke")
+    .option("--debug", "Enable debug logging")
+    .option("--password-file <path>", "Read memory password from file")
+    .action(async (grantId: string, options: CommanderCommonOptions) => {
+      await handlers.revokeAuthGrant(grantId, toCommonOptions(options));
     });
 
   const memory = program.command("memory").description("Import and export local memory records");
@@ -127,7 +160,10 @@ interface CommanderMemoryOptions extends CommanderCommonOptions {
 }
 
 interface CommanderAuthTokenOptions extends CommanderCommonOptions {
+  subject: string;
+  label?: string;
   scope?: string[];
+  preset?: Array<"public-read" | "owner-read" | "maintainer" | "owner-full">;
   expiresIn: string;
   resource?: string;
 }
@@ -155,7 +191,10 @@ function toMemoryOptions(options: CommanderMemoryOptions): MemoryCommandOptions 
 function toAuthTokenOptions(options: CommanderAuthTokenOptions): AuthTokenCommandOptions {
   return {
     ...toCommonOptions(options),
+    subject: options.subject,
+    label: options.label,
     scopes: options.scope ?? [],
+    presets: options.preset ?? [],
     expiresIn: options.expiresIn,
     resource: options.resource,
   };
@@ -168,4 +207,15 @@ function parseMemoryFormat(value: string): MemoryFormat {
 
 function collectScope(value: string, previous: string[]): string[] {
   return [...previous, value];
+}
+
+function collectPreset(
+  value: string,
+  previous: Array<"public-read" | "owner-read" | "maintainer" | "owner-full">,
+): Array<"public-read" | "owner-read" | "maintainer" | "owner-full"> {
+  const valid = ["public-read", "owner-read", "maintainer", "owner-full"];
+  if (!valid.includes(value)) {
+    throw new InvalidArgumentError(`preset must be one of: ${valid.join(", ")}`);
+  }
+  return [...previous, value as "public-read" | "owner-read" | "maintainer" | "owner-full"];
 }

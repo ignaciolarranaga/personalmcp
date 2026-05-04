@@ -1,9 +1,15 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
-import type { ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
+import {
+  ListToolsRequestSchema,
+  type ServerNotification,
+  type ServerRequest,
+} from "@modelcontextprotocol/sdk/types.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { z } from "zod";
 import {
   anonymousMemoryAccess,
+  defaultAuthResource,
   memoryAccessFromScopes,
   OPERATION_SCOPES,
   hasScopes,
@@ -20,6 +26,7 @@ interface ToolResponse {
   content: Array<{ type: "text"; text: string }>;
   structuredContent?: Record<string, unknown>;
   isError?: boolean;
+  _meta?: Record<string, unknown>;
 }
 
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
@@ -75,10 +82,13 @@ export function createServer(
             .optional()
             .describe("Optional instructions for memory extraction, e.g. 'focus on opinions'"),
         }),
+        _meta: {
+          securitySchemes: oauthSecurity([OPERATION_SCOPES.ingest]),
+        },
       },
       withDebug(debugLogger, "ingest", async (args, extra) => {
         if (!isAuthorized(accessMode, extra, [OPERATION_SCOPES.ingest])) {
-          return insufficientScope([OPERATION_SCOPES.ingest]);
+          return insufficientScope([OPERATION_SCOPES.ingest], config);
         }
         try {
           const result = await handleIngest(args, llm, config);
@@ -131,10 +141,13 @@ export function createServer(
           .default("unknown")
           .describe("Intended audience — affects whether private memory is included"),
       }),
+      _meta: {
+        securitySchemes: [{ type: "noauth" }, ...oauthSecurity([OPERATION_SCOPES.ask])],
+      },
     },
     withDebug(debugLogger, "ask", async (args, extra) => {
       if (accessMode === "scoped" && !isAuthorized(accessMode, extra, [OPERATION_SCOPES.ask])) {
-        return insufficientScope([OPERATION_SCOPES.ask]);
+        return insufficientScope([OPERATION_SCOPES.ask], config);
       }
       try {
         const askArgs =
@@ -203,10 +216,13 @@ export function createServer(
             .optional()
             .describe("List of recently asked questions to avoid repetition"),
         }),
+        _meta: {
+          securitySchemes: oauthSecurity([OPERATION_SCOPES.suggest]),
+        },
       },
       withDebug(debugLogger, "suggest_question", async (args, extra) => {
         if (!isAuthorized(accessMode, extra, [OPERATION_SCOPES.suggest])) {
-          return insufficientScope([OPERATION_SCOPES.suggest]);
+          return insufficientScope([OPERATION_SCOPES.suggest], config);
         }
         try {
           const result = await handleSuggestQuestion(args, llm, config);
@@ -232,6 +248,7 @@ export function createServer(
     );
   }
 
+  installToolSecuritySchemeAdapter(server);
   return server;
 }
 
@@ -307,7 +324,12 @@ function isAuthorized(accessMode: ServerAccessMode, extra: ToolExtra, scopes: st
   return !!extra.authInfo && hasScopes(extra.authInfo, scopes);
 }
 
-function insufficientScope(requiredScopes: string[]): ToolResponse {
+function insufficientScope(requiredScopes: string[], config: Config): ToolResponse {
+  const challenge = `Bearer resource_metadata="${protectedResourceMetadataUrl(
+    defaultAuthResource(config),
+  )}", error="insufficient_scope", error_description="Additional OAuth scopes are required.", scope="${requiredScopes.join(
+    " ",
+  )}"`;
   return {
     content: [
       {
@@ -319,6 +341,71 @@ function insufficientScope(requiredScopes: string[]): ToolResponse {
       error: "insufficient_scope",
       required_scopes: requiredScopes,
     },
+    _meta: {
+      "mcp/www_authenticate": [challenge],
+    },
     isError: true,
   };
+}
+
+function oauthSecurity(scopes: string[]): Array<{ type: "oauth2"; scopes: string[] }> {
+  return [{ type: "oauth2", scopes }];
+}
+
+function installToolSecuritySchemeAdapter(server: McpServer): void {
+  const protocol = server.server as unknown as {
+    removeRequestHandler: (method: string) => void;
+    setRequestHandler: (schema: typeof ListToolsRequestSchema, handler: () => unknown) => void;
+  };
+  const registry = server as unknown as {
+    _registeredTools: Record<
+      string,
+      {
+        title?: string;
+        description?: string;
+        inputSchema?: z.ZodTypeAny;
+        outputSchema?: z.ZodTypeAny;
+        annotations?: unknown;
+        execution?: unknown;
+        _meta?: Record<string, unknown>;
+        enabled: boolean;
+      }
+    >;
+  };
+  protocol.removeRequestHandler("tools/list");
+  protocol.setRequestHandler(ListToolsRequestSchema, () => ({
+    tools: Object.entries(registry._registeredTools)
+      .filter(([, tool]) => tool.enabled)
+      .map(([name, tool]) => {
+        const securitySchemes = tool._meta?.securitySchemes;
+        return {
+          name,
+          title: tool.title,
+          description: tool.description,
+          inputSchema: toJsonSchema(tool.inputSchema),
+          outputSchema: tool.outputSchema ? toJsonSchema(tool.outputSchema) : undefined,
+          annotations: tool.annotations,
+          execution: tool.execution,
+          securitySchemes,
+          _meta: tool._meta,
+        };
+      }),
+  }));
+}
+
+function toJsonSchema(schema: z.ZodTypeAny | undefined): Record<string, unknown> {
+  if (!schema) return { type: "object", properties: {} };
+  const jsonSchema = zodToJsonSchema(schema as z.ZodType<unknown>, {
+    $refStrategy: "none",
+  }) as Record<string, unknown>;
+  return jsonSchema.definitions ? { type: "object", properties: {} } : jsonSchema;
+}
+
+function protectedResourceMetadataUrl(resource: string): string {
+  const url = new URL(resource);
+  const resourcePath = url.pathname === "/" ? "" : url.pathname;
+  url.pathname = `/.well-known/oauth-protected-resource${resourcePath}`;
+  url.search = "";
+  url.hash = "";
+  return url.toString();
 }

@@ -1,10 +1,8 @@
 # MCP Clients
 
-AIProfile accepts unauthenticated MCP connections, but those connections are intentionally limited to public-safe `ask`.
+AIProfile accepts unauthenticated MCP connections, but those connections are intentionally limited to public-safe `ask`. Owner-level use requires an OAuth grant created with `aiprofile auth grant add`.
 
-Owner-level use requires a Bearer token generated with `aiprofile auth token`. Use the token as an `Authorization: Bearer <token>` header in MCP clients that support custom headers.
-
-Use URL:
+Default local URL:
 
 ```text
 http://localhost:3000/mcp
@@ -16,11 +14,21 @@ Transport type:
 Streamable HTTP
 ```
 
+## Compatibility
+
+| Client                   | Runtime                         | Typical URL                 | Notes                                                   |
+| ------------------------ | ------------------------------- | --------------------------- | ------------------------------------------------------- |
+| Claude Desktop           | Desktop app                     | `http://localhost:3000/mcp` | Can connect directly to a local desktop server.         |
+| Claude Code              | Terminal                        | `http://localhost:3000/mcp` | Add with `claude mcp add --transport http`.             |
+| Codex CLI                | Terminal                        | `http://localhost:3000/mcp` | Configure as a local terminal MCP server.               |
+| ChatGPT connectors       | Web/desktop UI backed by OpenAI | `https://<tunnel>/mcp`      | Requires public HTTPS, usually ngrok for local testing. |
+| Claude custom connectors | Web-hosted                      | `https://<tunnel>/mcp`      | Requires public HTTPS, usually ngrok for local testing. |
+
 Client guides:
 
 - [Claude Desktop](/clients/claude-desktop)
 - [Claude Code](/clients/claude-code)
-- [OpenAI Codex and ChatGPT Desktop](/clients/openai-codex-chatgpt)
-- [Claude Custom Connector with ngrok](/clients/custom-connector-ngrok)
+- [ChatGPT and Codex](/clients/openai-codex-chatgpt)
+- [Local server with ngrok](/clients/custom-connector-ngrok)
 
-See [Authentication](/reference/authentication) for examples and supported scopes.
+See [Authentication](/reference/authentication) for OAuth grants, presets, scopes, and revocation.

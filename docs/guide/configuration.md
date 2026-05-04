@@ -21,8 +21,10 @@ memory:
   mode: encrypted # default; set to plain only for local testing/debugging
 
 auth:
-  mode: local # default; local Bearer tokens signed from the encrypted memory vault
+  mode: local # default; local OAuth grants backed by encrypted storage
   anonymous_enabled: true # unauthenticated clients can only use public-safe ask
+  # issuer: https://abc123.ngrok-free.app
+  # resource: https://abc123.ngrok-free.app/mcp
 
 safety:
   allow_first_person: true
@@ -50,13 +52,15 @@ http://localhost:<port>/mcp
 
 ## Authentication
 
-`auth.mode: local` enables local Bearer tokens signed from the encrypted memory vault. In this mode, encrypted memory is required.
+`auth.mode: local` enables local OAuth grants and access tokens backed by the encrypted memory vault. In this mode, encrypted memory is required.
 
 `auth.mode: off` disables token checks and exposes the full MCP tool surface without authentication. Use it only for isolated local testing.
 
 `auth.anonymous_enabled: true` documents the intended anonymous access behavior. Anonymous access is limited to public-safe `ask`.
 
-`auth.resource` may be set when the externally visible MCP URL is not `http://localhost:<port>/mcp`, such as when using a public HTTPS tunnel. Tokens are audience-bound to the resource URL.
+`auth.issuer` is the externally visible OAuth issuer origin. Set it to the public HTTPS tunnel origin for ChatGPT or other web-hosted clients.
+
+`auth.resource` is the externally visible MCP URL. Access tokens are audience-bound to the resource URL, so update this whenever your ngrok URL changes.
 
 ## Non-interactive startup
 

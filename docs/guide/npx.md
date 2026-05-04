@@ -9,18 +9,15 @@ npx --yes --ignore-scripts=false aiprofile serve
 
 The `--ignore-scripts=false` flag is intentional. It avoids missing native bindings when your user or environment npm config disables install scripts.
 
-## Generate an owner token
+## Create an owner grant
 
 ```bash
-npx --yes --ignore-scripts=false aiprofile auth token \
-  --scope aiprofile:ask \
-  --scope aiprofile:ingest \
-  --scope aiprofile:suggest \
-  --scope memory:read:public \
-  --scope memory:read:personal \
-  --scope memory:read:secret \
-  --scope memory:read:kind:*
+npx --yes --ignore-scripts=false aiprofile auth grant add \
+  --subject owner \
+  --preset owner-full
 ```
+
+Use the printed one-time approval code when your MCP client opens the AIProfile OAuth authorization page.
 
 ## Export and import memory
 

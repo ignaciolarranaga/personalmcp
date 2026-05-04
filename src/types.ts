@@ -69,7 +69,68 @@ export interface MemoryDatabase {
   getSourceByHash(hash: string): SourceRecord | null;
   insertSource(record: SourceRecord): void;
   listSources(): SourceRecord[];
+  insertOAuthClient(record: OAuthClientRecord): void;
+  getOAuthClient(clientId: string): OAuthClientRecord | null;
+  insertAuthGrant(record: AuthGrantRecord): void;
+  listAuthGrants(): AuthGrantRecord[];
+  getAuthGrant(id: string): AuthGrantRecord | null;
+  getAuthGrantByApprovalCodeHash(hash: string): AuthGrantRecord | null;
+  updateAuthGrant(id: string, updates: Partial<AuthGrantRecord>): void;
+  insertOAuthAuthorizationCode(record: OAuthAuthorizationCodeRecord): void;
+  getOAuthAuthorizationCode(codeHash: string): OAuthAuthorizationCodeRecord | null;
+  consumeOAuthAuthorizationCode(codeHash: string, consumedAt: string): void;
+  insertOAuthRefreshToken(record: OAuthRefreshTokenRecord): void;
+  getOAuthRefreshToken(tokenHash: string): OAuthRefreshTokenRecord | null;
+  updateOAuthRefreshToken(tokenHash: string, updates: Partial<OAuthRefreshTokenRecord>): void;
   persist(): void;
+}
+
+export interface OAuthClientRecord {
+  client_id: string;
+  client_name?: string;
+  redirect_uris: string[];
+  token_endpoint_auth_method: string;
+  created_at: string;
+}
+
+export interface AuthGrantRecord {
+  id: string;
+  subject: string;
+  label?: string;
+  resource: string;
+  scopes: string[];
+  approval_code_hash?: string;
+  approval_code_expires_at?: string;
+  approval_code_consumed_at?: string;
+  expires_at?: string;
+  revoked_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OAuthAuthorizationCodeRecord {
+  code_hash: string;
+  client_id: string;
+  grant_id: string;
+  redirect_uri: string;
+  code_challenge: string;
+  scopes: string[];
+  resource: string;
+  expires_at: string;
+  created_at: string;
+  consumed_at?: string;
+}
+
+export interface OAuthRefreshTokenRecord {
+  token_hash: string;
+  client_id: string;
+  grant_id: string;
+  scopes: string[];
+  resource: string;
+  expires_at: string;
+  revoked_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export type SourceType =

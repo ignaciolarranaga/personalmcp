@@ -2,7 +2,15 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "
 import { join } from "node:path";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import Database from "better-sqlite3";
-import type { MemoryDatabase, MemoryRecord, SourceRecord } from "../types.js";
+import type {
+  AuthGrantRecord,
+  MemoryDatabase,
+  MemoryRecord,
+  OAuthAuthorizationCodeRecord,
+  OAuthClientRecord,
+  OAuthRefreshTokenRecord,
+  SourceRecord,
+} from "../types.js";
 
 const ENVELOPE_VERSION = 1;
 const ALGORITHM = "aes-256-gcm" as const;
@@ -67,6 +75,54 @@ CREATE TABLE IF NOT EXISTS sources (
   content_hash TEXT NOT NULL UNIQUE,
   memory_item_ids TEXT NOT NULL DEFAULT '[]'
 );
+
+CREATE TABLE IF NOT EXISTS oauth_clients (
+  client_id TEXT PRIMARY KEY,
+  client_name TEXT,
+  redirect_uris TEXT NOT NULL,
+  token_endpoint_auth_method TEXT NOT NULL DEFAULT 'none',
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth_grants (
+  id TEXT PRIMARY KEY,
+  subject TEXT NOT NULL,
+  label TEXT,
+  resource TEXT NOT NULL,
+  scopes TEXT NOT NULL,
+  approval_code_hash TEXT UNIQUE,
+  approval_code_expires_at TEXT,
+  approval_code_consumed_at TEXT,
+  expires_at TEXT,
+  revoked_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS oauth_authorization_codes (
+  code_hash TEXT PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  grant_id TEXT NOT NULL,
+  redirect_uri TEXT NOT NULL,
+  code_challenge TEXT NOT NULL,
+  scopes TEXT NOT NULL,
+  resource TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  consumed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
+  token_hash TEXT PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  grant_id TEXT NOT NULL,
+  scopes TEXT NOT NULL,
+  resource TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 `;
 
 interface RawRecord {
@@ -96,6 +152,54 @@ interface RawSource {
   created_at: string;
   content_hash: string;
   memory_item_ids: string;
+}
+
+interface RawOAuthClient {
+  client_id: string;
+  client_name: string | null;
+  redirect_uris: string;
+  token_endpoint_auth_method: string;
+  created_at: string;
+}
+
+interface RawAuthGrant {
+  id: string;
+  subject: string;
+  label: string | null;
+  resource: string;
+  scopes: string;
+  approval_code_hash: string | null;
+  approval_code_expires_at: string | null;
+  approval_code_consumed_at: string | null;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface RawOAuthAuthorizationCode {
+  code_hash: string;
+  client_id: string;
+  grant_id: string;
+  redirect_uri: string;
+  code_challenge: string;
+  scopes: string;
+  resource: string;
+  expires_at: string;
+  created_at: string;
+  consumed_at: string | null;
+}
+
+interface RawOAuthRefreshToken {
+  token_hash: string;
+  client_id: string;
+  grant_id: string;
+  scopes: string;
+  resource: string;
+  expires_at: string;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 function rowToRecord(row: RawRecord): MemoryRecord {
@@ -128,6 +232,64 @@ function rowToSource(row: RawSource): SourceRecord {
     created_at: row.created_at,
     content_hash: row.content_hash,
     memory_item_ids: JSON.parse(row.memory_item_ids) as string[],
+  };
+}
+
+function rowToOAuthClient(row: RawOAuthClient): OAuthClientRecord {
+  return {
+    client_id: row.client_id,
+    client_name: row.client_name ?? undefined,
+    redirect_uris: JSON.parse(row.redirect_uris) as string[],
+    token_endpoint_auth_method: row.token_endpoint_auth_method,
+    created_at: row.created_at,
+  };
+}
+
+function rowToAuthGrant(row: RawAuthGrant): AuthGrantRecord {
+  return {
+    id: row.id,
+    subject: row.subject,
+    label: row.label ?? undefined,
+    resource: row.resource,
+    scopes: JSON.parse(row.scopes) as string[],
+    approval_code_hash: row.approval_code_hash ?? undefined,
+    approval_code_expires_at: row.approval_code_expires_at ?? undefined,
+    approval_code_consumed_at: row.approval_code_consumed_at ?? undefined,
+    expires_at: row.expires_at ?? undefined,
+    revoked_at: row.revoked_at ?? undefined,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function rowToOAuthAuthorizationCode(
+  row: RawOAuthAuthorizationCode,
+): OAuthAuthorizationCodeRecord {
+  return {
+    code_hash: row.code_hash,
+    client_id: row.client_id,
+    grant_id: row.grant_id,
+    redirect_uri: row.redirect_uri,
+    code_challenge: row.code_challenge,
+    scopes: JSON.parse(row.scopes) as string[],
+    resource: row.resource,
+    expires_at: row.expires_at,
+    created_at: row.created_at,
+    consumed_at: row.consumed_at ?? undefined,
+  };
+}
+
+function rowToOAuthRefreshToken(row: RawOAuthRefreshToken): OAuthRefreshTokenRecord {
+  return {
+    token_hash: row.token_hash,
+    client_id: row.client_id,
+    grant_id: row.grant_id,
+    scopes: JSON.parse(row.scopes) as string[],
+    resource: row.resource,
+    expires_at: row.expires_at,
+    revoked_at: row.revoked_at ?? undefined,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
   };
 }
 
@@ -258,6 +420,74 @@ export function createMemoryDatabase(options: {
   `);
 
   const listSourcesStmt = db.prepare("SELECT * FROM sources ORDER BY created_at DESC");
+  const insertOAuthClientStmt = db.prepare(`
+    INSERT OR REPLACE INTO oauth_clients
+      (client_id, client_name, redirect_uris, token_endpoint_auth_method, created_at)
+    VALUES
+      (@client_id, @client_name, @redirect_uris, @token_endpoint_auth_method, @created_at)
+  `);
+  const getOAuthClientStmt = db.prepare<[string]>(
+    "SELECT * FROM oauth_clients WHERE client_id = ?",
+  );
+  const insertAuthGrantStmt = db.prepare(`
+    INSERT INTO auth_grants
+      (id, subject, label, resource, scopes, approval_code_hash, approval_code_expires_at,
+       approval_code_consumed_at, expires_at, revoked_at, created_at, updated_at)
+    VALUES
+      (@id, @subject, @label, @resource, @scopes, @approval_code_hash, @approval_code_expires_at,
+       @approval_code_consumed_at, @expires_at, @revoked_at, @created_at, @updated_at)
+  `);
+  const listAuthGrantsStmt = db.prepare("SELECT * FROM auth_grants ORDER BY created_at DESC");
+  const getAuthGrantStmt = db.prepare<[string]>("SELECT * FROM auth_grants WHERE id = ?");
+  const getAuthGrantByApprovalCodeHashStmt = db.prepare<[string]>(
+    "SELECT * FROM auth_grants WHERE approval_code_hash = ?",
+  );
+  const updateAuthGrantStmt = db.prepare(`
+    UPDATE auth_grants SET
+      subject = COALESCE(@subject, subject),
+      label = COALESCE(@label, label),
+      resource = COALESCE(@resource, resource),
+      scopes = COALESCE(@scopes, scopes),
+      approval_code_hash = COALESCE(@approval_code_hash, approval_code_hash),
+      approval_code_expires_at = COALESCE(@approval_code_expires_at, approval_code_expires_at),
+      approval_code_consumed_at = COALESCE(@approval_code_consumed_at, approval_code_consumed_at),
+      expires_at = COALESCE(@expires_at, expires_at),
+      revoked_at = COALESCE(@revoked_at, revoked_at),
+      updated_at = @updated_at
+    WHERE id = @id
+  `);
+  const insertOAuthAuthorizationCodeStmt = db.prepare(`
+    INSERT INTO oauth_authorization_codes
+      (code_hash, client_id, grant_id, redirect_uri, code_challenge, scopes, resource,
+       expires_at, created_at, consumed_at)
+    VALUES
+      (@code_hash, @client_id, @grant_id, @redirect_uri, @code_challenge, @scopes, @resource,
+       @expires_at, @created_at, @consumed_at)
+  `);
+  const getOAuthAuthorizationCodeStmt = db.prepare<[string]>(
+    "SELECT * FROM oauth_authorization_codes WHERE code_hash = ?",
+  );
+  const consumeOAuthAuthorizationCodeStmt = db.prepare<[string, string]>(
+    "UPDATE oauth_authorization_codes SET consumed_at = ? WHERE code_hash = ?",
+  );
+  const insertOAuthRefreshTokenStmt = db.prepare(`
+    INSERT INTO oauth_refresh_tokens
+      (token_hash, client_id, grant_id, scopes, resource, expires_at, revoked_at, created_at, updated_at)
+    VALUES
+      (@token_hash, @client_id, @grant_id, @scopes, @resource, @expires_at, @revoked_at, @created_at, @updated_at)
+  `);
+  const getOAuthRefreshTokenStmt = db.prepare<[string]>(
+    "SELECT * FROM oauth_refresh_tokens WHERE token_hash = ?",
+  );
+  const updateOAuthRefreshTokenStmt = db.prepare(`
+    UPDATE oauth_refresh_tokens SET
+      scopes = COALESCE(@scopes, scopes),
+      resource = COALESCE(@resource, resource),
+      expires_at = COALESCE(@expires_at, expires_at),
+      revoked_at = COALESCE(@revoked_at, revoked_at),
+      updated_at = @updated_at
+    WHERE token_hash = @token_hash
+  `);
 
   return {
     insertRecord(record: MemoryRecord): void {
@@ -380,6 +610,105 @@ export function createMemoryDatabase(options: {
 
     listSources(): SourceRecord[] {
       return (listSourcesStmt.all() as RawSource[]).map(rowToSource);
+    },
+
+    insertOAuthClient(record: OAuthClientRecord): void {
+      insertOAuthClientStmt.run({
+        ...record,
+        client_name: record.client_name ?? null,
+        redirect_uris: JSON.stringify(record.redirect_uris),
+      });
+    },
+
+    getOAuthClient(clientId: string): OAuthClientRecord | null {
+      const row = getOAuthClientStmt.get(clientId) as RawOAuthClient | undefined;
+      return row ? rowToOAuthClient(row) : null;
+    },
+
+    insertAuthGrant(record: AuthGrantRecord): void {
+      insertAuthGrantStmt.run({
+        ...record,
+        label: record.label ?? null,
+        scopes: JSON.stringify(record.scopes),
+        approval_code_hash: record.approval_code_hash ?? null,
+        approval_code_expires_at: record.approval_code_expires_at ?? null,
+        approval_code_consumed_at: record.approval_code_consumed_at ?? null,
+        expires_at: record.expires_at ?? null,
+        revoked_at: record.revoked_at ?? null,
+      });
+    },
+
+    listAuthGrants(): AuthGrantRecord[] {
+      return (listAuthGrantsStmt.all() as RawAuthGrant[]).map(rowToAuthGrant);
+    },
+
+    getAuthGrant(id: string): AuthGrantRecord | null {
+      const row = getAuthGrantStmt.get(id) as RawAuthGrant | undefined;
+      return row ? rowToAuthGrant(row) : null;
+    },
+
+    getAuthGrantByApprovalCodeHash(hash: string): AuthGrantRecord | null {
+      const row = getAuthGrantByApprovalCodeHashStmt.get(hash) as RawAuthGrant | undefined;
+      return row ? rowToAuthGrant(row) : null;
+    },
+
+    updateAuthGrant(id: string, updates: Partial<AuthGrantRecord>): void {
+      updateAuthGrantStmt.run({
+        id,
+        subject: updates.subject ?? null,
+        label: updates.label ?? null,
+        resource: updates.resource ?? null,
+        scopes: updates.scopes ? JSON.stringify(updates.scopes) : null,
+        approval_code_hash: updates.approval_code_hash ?? null,
+        approval_code_expires_at: updates.approval_code_expires_at ?? null,
+        approval_code_consumed_at: updates.approval_code_consumed_at ?? null,
+        expires_at: updates.expires_at ?? null,
+        revoked_at: updates.revoked_at ?? null,
+        updated_at: updates.updated_at ?? new Date().toISOString(),
+      });
+    },
+
+    insertOAuthAuthorizationCode(record: OAuthAuthorizationCodeRecord): void {
+      insertOAuthAuthorizationCodeStmt.run({
+        ...record,
+        scopes: JSON.stringify(record.scopes),
+        consumed_at: record.consumed_at ?? null,
+      });
+    },
+
+    getOAuthAuthorizationCode(codeHash: string): OAuthAuthorizationCodeRecord | null {
+      const row = getOAuthAuthorizationCodeStmt.get(codeHash) as
+        | RawOAuthAuthorizationCode
+        | undefined;
+      return row ? rowToOAuthAuthorizationCode(row) : null;
+    },
+
+    consumeOAuthAuthorizationCode(codeHash: string, consumedAt: string): void {
+      consumeOAuthAuthorizationCodeStmt.run(consumedAt, codeHash);
+    },
+
+    insertOAuthRefreshToken(record: OAuthRefreshTokenRecord): void {
+      insertOAuthRefreshTokenStmt.run({
+        ...record,
+        scopes: JSON.stringify(record.scopes),
+        revoked_at: record.revoked_at ?? null,
+      });
+    },
+
+    getOAuthRefreshToken(tokenHash: string): OAuthRefreshTokenRecord | null {
+      const row = getOAuthRefreshTokenStmt.get(tokenHash) as RawOAuthRefreshToken | undefined;
+      return row ? rowToOAuthRefreshToken(row) : null;
+    },
+
+    updateOAuthRefreshToken(tokenHash: string, updates: Partial<OAuthRefreshTokenRecord>): void {
+      updateOAuthRefreshTokenStmt.run({
+        token_hash: tokenHash,
+        scopes: updates.scopes ? JSON.stringify(updates.scopes) : null,
+        resource: updates.resource ?? null,
+        expires_at: updates.expires_at ?? null,
+        revoked_at: updates.revoked_at ?? null,
+        updated_at: updates.updated_at ?? new Date().toISOString(),
+      });
     },
 
     persist: persistFn,

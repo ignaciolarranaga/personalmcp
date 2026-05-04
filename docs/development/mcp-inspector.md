@@ -30,11 +30,11 @@ Open the Inspector UI, usually `http://localhost:6274`, then connect with:
 
 After connecting, open the **Tools** tab and run **List Tools**.
 
-Without a Bearer token, you should only see:
+Without OAuth authorization, you should only see:
 
 - `ask`
 
-With an owner token configured, you should see:
+After completing the OAuth flow with an owner grant, you should see:
 
 - `ingest`
 - `ask`

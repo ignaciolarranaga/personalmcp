@@ -1,11 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import type { Config, MemoryKind, MemoryRecord } from "./types.js";
+import type { AuthGrantRecord, Config, MemoryDatabase, MemoryKind, MemoryRecord } from "./types.js";
 import type { MemoryReadAccess } from "./memory/readMemory.js";
 
-const TOKEN_ISSUER = "aiprofile.local";
+const ACCESS_TOKEN_EXPIRES_IN = "1h";
 const SIGNING_CONTEXT = "aiprofile-local-auth-token-v1";
-const DEFAULT_EXPIRES_IN = "30d";
 
 export const OPERATION_SCOPES = {
   ask: "aiprofile:ask",
@@ -52,11 +51,15 @@ export interface TokenClaims {
   iat: number;
   exp: number;
   scope: string;
+  typ?: "access";
+  client_id?: string;
+  grant_id?: string;
 }
 
-export interface IssueTokenOptions {
+export interface IssueAccessTokenOptions {
+  clientId: string;
+  grant: AuthGrantRecord;
   scopes: string[];
-  expiresIn?: string;
   resource: string;
 }
 
@@ -64,37 +67,48 @@ export function defaultAuthResource(config: Config): string {
   return config.auth?.resource ?? `http://localhost:${config.server?.port ?? 3000}/mcp`;
 }
 
+export function defaultAuthIssuer(config: Config): string {
+  if (config.auth?.issuer) return config.auth.issuer;
+  const resource = new URL(defaultAuthResource(config));
+  return `${resource.protocol}//${resource.host}`;
+}
+
 export function localAuthIssuer(config: Config): string {
-  return config.auth?.issuer ?? TOKEN_ISSUER;
+  return defaultAuthIssuer(config);
 }
 
 export function deriveAuthSigningKey(vaultKey: Buffer): Buffer {
   return createHmac("sha256", vaultKey).update(SIGNING_CONTEXT).digest();
 }
 
-export function issueLocalAuthToken(
+export function issueOAuthAccessToken(
   signingKey: Buffer,
   config: Config,
-  options: IssueTokenOptions,
-): string {
+  options: IssueAccessTokenOptions,
+): { token: string; expiresAt: number } {
   const now = Math.floor(Date.now() / 1000);
-  const ttlSeconds = parseExpiresIn(options.expiresIn ?? DEFAULT_EXPIRES_IN);
+  const ttlSeconds = parseExpiresIn(ACCESS_TOKEN_EXPIRES_IN);
+  const expiresAt = now + ttlSeconds;
   const claims: TokenClaims = {
     iss: localAuthIssuer(config),
-    sub: "owner",
+    sub: options.grant.subject,
     aud: options.resource,
     iat: now,
-    exp: now + ttlSeconds,
+    exp: expiresAt,
     scope: normalizeScopes(options.scopes).join(" "),
+    typ: "access",
+    client_id: options.clientId,
+    grant_id: options.grant.id,
   };
-  return signJwt(signingKey, claims);
+  return { token: signJwt(signingKey, claims), expiresAt };
 }
 
-export function verifyLocalAuthToken(
+export function verifyOAuthAccessToken(
   token: string,
   signingKey: Buffer,
   config: Config,
   resource: string,
+  db: MemoryDatabase,
 ): AuthInfo {
   const claims = verifyJwt(token, signingKey);
   const now = Math.floor(Date.now() / 1000);
@@ -105,16 +119,35 @@ export function verifyLocalAuthToken(
   if (claims.aud !== resource) {
     throw new AuthError("invalid_token", "Token resource is not valid.");
   }
+  if (claims.typ !== "access" || !claims.client_id || !claims.grant_id) {
+    throw new AuthError("invalid_token", "Token is not an OAuth access token.");
+  }
   if (!Number.isFinite(claims.exp) || claims.exp <= now) {
     throw new AuthError("invalid_token", "Token has expired.");
   }
 
+  const grant = db.getAuthGrant(claims.grant_id);
+  if (!grant || !isGrantActive(grant)) {
+    throw new AuthError("invalid_token", "Token grant is not active.");
+  }
+  if (grant.resource !== resource) {
+    throw new AuthError("invalid_token", "Token grant resource is not valid.");
+  }
+  const tokenScopes = claims.scope ? claims.scope.split(/\s+/).filter(Boolean) : [];
+  if (!scopesAllowed(tokenScopes, grant.scopes)) {
+    throw new AuthError("invalid_token", "Token scopes exceed the active grant.");
+  }
+
   return {
     token,
-    clientId: claims.sub,
-    scopes: claims.scope ? claims.scope.split(/\s+/).filter(Boolean) : [],
+    clientId: claims.client_id,
+    scopes: tokenScopes,
     expiresAt: claims.exp,
     resource: new URL(resource),
+    extra: {
+      subject: claims.sub,
+      grantId: claims.grant_id,
+    },
   };
 }
 
@@ -150,9 +183,29 @@ export function hasScopes(authInfo: AuthInfo, requiredScopes: string[]): boolean
   return requiredScopes.every(
     (scope) =>
       scopeSet.has(scope) ||
-      scopeSet.has("aiprofile:*") ||
-      (scope.startsWith("memory:read:") && scopeSet.has("memory:read:*")),
+      (scope.startsWith("aiprofile:") && scopeSet.has("aiprofile:*")) ||
+      (scope.startsWith("memory:read:") && scopeSet.has("memory:read:*")) ||
+      (scope.startsWith("memory:read:kind:") && scopeSet.has("memory:read:kind:*")),
   );
+}
+
+export function normalizeScopes(scopes: string[]): string[] {
+  return [...new Set(scopes.map((scope) => scope.trim()).filter(Boolean))].sort();
+}
+
+export function scopesAllowed(requestedScopes: string[], grantedScopes: string[]): boolean {
+  const grantAuthInfo: AuthInfo = {
+    token: "",
+    clientId: "",
+    scopes: grantedScopes,
+  };
+  return hasScopes(grantAuthInfo, requestedScopes);
+}
+
+export function isGrantActive(grant: AuthGrantRecord, now = new Date()): boolean {
+  if (grant.revoked_at) return false;
+  if (grant.expires_at && Date.parse(grant.expires_at) <= now.getTime()) return false;
+  return true;
 }
 
 export function parseExpiresIn(value: string): number {
@@ -175,10 +228,6 @@ export class AuthError extends Error {
   ) {
     super(message);
   }
-}
-
-function normalizeScopes(scopes: string[]): string[] {
-  return [...new Set(scopes.map((scope) => scope.trim()).filter(Boolean))].sort();
 }
 
 function signJwt(signingKey: Buffer, claims: TokenClaims): string {

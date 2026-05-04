@@ -6,7 +6,8 @@ From source, run commands through npm scripts:
 
 ```bash
 npm start
-npm run auth -- token
+npm run auth -- grant add --subject owner --preset owner-full
+npm run auth -- grant list
 npm run setup-model
 npm run memory -- export
 ```
@@ -15,7 +16,7 @@ From the published package, run commands through `npx`:
 
 ```bash
 npx --yes --ignore-scripts=false aiprofile serve
-npx --yes --ignore-scripts=false aiprofile auth token
+npx --yes --ignore-scripts=false aiprofile auth grant add --subject owner --preset owner-full
 npx --yes --ignore-scripts=false aiprofile setup-model
 npx --yes --ignore-scripts=false aiprofile memory export
 ```
@@ -38,16 +39,18 @@ npm start -- --debug
 npm start -- --password-file ./local-password-file
 ```
 
-### `auth token`
+### `auth grant`
 
-Issues a scoped Bearer token after the encrypted memory vault exists.
+Creates, lists, and revokes local OAuth grants.
 
 ```bash
-npm run auth -- token --scope aiprofile:ask
-npx --yes --ignore-scripts=false aiprofile auth token --scope aiprofile:ask
+npm run auth -- grant add --subject owner --preset owner-full
+npm run auth -- grant add --subject public-reader --preset public-read
+npm run auth -- grant list
+npm run auth -- grant revoke grant_abc123
 ```
 
-See [Authentication](/reference/authentication) for scope examples.
+`auth grant add` prints a one-time approval code for the OAuth authorization page. See [Authentication](/reference/authentication) for scope and ngrok examples.
 
 ### `setup-model`
 

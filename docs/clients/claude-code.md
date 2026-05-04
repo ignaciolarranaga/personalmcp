@@ -14,4 +14,12 @@ Confirm the configuration:
 claude mcp list
 ```
 
-Unauthenticated access is limited to public-safe `ask`. Configure an `Authorization: Bearer <token>` header where supported for owner-level access.
+Create an OAuth grant:
+
+```bash
+npm run auth -- grant add --subject claude-code --preset owner-full
+```
+
+When Claude Code starts the OAuth flow, enter the printed one-time approval code in the AIProfile authorization page.
+
+If Claude Code is running in a remote environment that cannot reach your desktop `localhost`, expose AIProfile with ngrok and add the public `https://.../mcp` URL instead.

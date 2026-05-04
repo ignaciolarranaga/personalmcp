@@ -1,121 +1,114 @@
 # Authentication
 
-AIProfile uses local Bearer tokens for HTTP MCP authentication. Tokens are issued by the local CLI after verifying the encrypted memory master password, and the server validates them on every MCP request.
+AIProfile uses OAuth 2.1 for HTTP MCP authentication. The server acts as both the MCP resource server and a local authorization server. Grants are stored in the encrypted AIProfile database, and clients receive OAuth access tokens through authorization code + PKCE.
 
-This is a local-first security model rather than a hosted OAuth authorization server. It follows the MCP transport pattern of sending:
-
-```http
-Authorization: Bearer <token>
-```
+This is local-first auth. Grant subjects and labels are for audit and revocation only; they do not prove email or account ownership. The one-time approval code printed by `aiprofile auth grant add` is the credential that authorizes a client connection.
 
 ## Overview
 
-By default, `auth.mode` is `local`. The server accepts both anonymous and token-authenticated MCP connections:
+By default, `auth.mode` is `local`.
 
-- Anonymous clients get a limited public surface.
-- Authenticated clients get tools and memory access according to token scopes.
-- Tokens are signed from the encrypted memory vault key, so token issuance requires the memory master password.
-- Tokens expire after 30 days by default.
+- Anonymous clients can call only public-safe `ask`.
+- OAuth clients get tools and memory access according to grant scopes.
+- Access tokens are audience-bound to `auth.resource`.
+- Refresh tokens and grants can be revoked server-side.
+- Encrypted memory mode is required for local OAuth in normal use.
 
-## Anonymous access
+## Expected flow
 
-Unauthenticated clients can only call `ask` in public-safe mode. Anonymous answers read only memory records with `visibility: "normal"` from generic categories:
-
-- `profile`
-- `fact`
-- `summary`
-
-Anonymous clients cannot call `ingest` or `suggest_question`, and they cannot read personal, private, or sensitive memory.
-
-## Creating tokens
-
-Create tokens after the encrypted memory vault exists. The first `npm start` or `npx aiprofile serve` creates the vault and asks for the memory password.
-
-Owner token with broad local permissions:
+1. Start AIProfile locally on `http://localhost:3000/mcp`.
+2. For ChatGPT or another web-hosted client, start an HTTPS tunnel such as `ngrok http 3000`.
+3. Set `auth.issuer` to the public origin and `auth.resource` to the public MCP URL, then restart AIProfile.
+4. Create a grant:
 
 ```bash
-npm run auth -- token \
-  --scope aiprofile:ask \
-  --scope aiprofile:ingest \
-  --scope aiprofile:suggest \
-  --scope memory:read:public \
-  --scope memory:read:personal \
-  --scope memory:read:secret \
-  --scope memory:read:kind:*
+npm run auth -- grant add \
+  --subject ignaciolarranaga \
+  --preset owner-full \
+  --resource https://abc123.ngrok-free.app/mcp
 ```
 
-Published package form:
+5. Add the MCP server URL in the client.
+6. The client discovers OAuth metadata, registers itself, and opens the AIProfile authorization page.
+7. Enter the one-time approval code, review the requested scopes, and approve.
+8. Revoke access later:
 
 ```bash
-npx --yes --ignore-scripts=false aiprofile auth token \
-  --scope aiprofile:ask \
-  --scope aiprofile:ingest \
-  --scope aiprofile:suggest \
-  --scope memory:read:public \
-  --scope memory:read:personal \
-  --scope memory:read:secret \
-  --scope memory:read:kind:*
+npm run auth -- grant revoke <grant-id>
 ```
 
-The default expiration is `30d`. Override it with `--expires-in`:
+## Local HTTPS tunnels
+
+ChatGPT and browser-hosted clients need a public HTTPS URL. For local desktop hosting, use ngrok or an equivalent tunnel:
 
 ```bash
-npm run auth -- token --scope aiprofile:ask --expires-in 24h
+ngrok http 3000
 ```
 
-If the MCP endpoint resource URL differs from the default `http://localhost:3000/mcp`, bind the token to that URL:
-
-```bash
-npm run auth -- token \
-  --resource https://abc123.ngrok-free.app/mcp \
-  --scope aiprofile:ask
-```
-
-Bearer tokens are credentials. Treat them like passwords and avoid committing them to source control.
-
-## Configuring MCP clients
-
-Use URL `http://localhost:3000/mcp` with Streamable HTTP transport.
-
-For owner-level access, configure the client to send this header on every request:
-
-```http
-Authorization: Bearer <token>
-```
-
-If a client cannot send custom headers, it can still connect anonymously, but it will only have public-safe `ask`.
-
-## Configuration
-
-The default auth configuration is:
+If ngrok prints `https://abc123.ngrok-free.app`, configure:
 
 ```yaml
 auth:
   mode: local
   anonymous_enabled: true
+  issuer: https://abc123.ngrok-free.app
+  resource: https://abc123.ngrok-free.app/mcp
 ```
 
-`auth.mode: local` enables local Bearer tokens signed from the encrypted memory vault. In this mode, encrypted memory is required.
+Restart AIProfile whenever the tunnel URL changes. Create grants bound to the public `resource` URL. Keep tunnels short-lived, grant narrow scopes, and never expose `auth.mode: off` through a tunnel.
 
-`auth.mode: off` disables token checks and exposes the full MCP tool surface without authentication. Use it only for isolated local testing.
+## Grant commands
 
-`auth.anonymous_enabled: true` documents the intended anonymous access behavior. Anonymous access is limited to public-safe `ask`.
+Create a grant with explicit scopes:
 
-`auth.resource` may be set when the externally visible MCP URL is not `http://localhost:<port>/mcp`, such as when using a public HTTPS tunnel. Tokens are audience-bound to the resource URL.
+```bash
+npm run auth -- grant add \
+  --subject claude-desktop \
+  --scope aiprofile:ask \
+  --scope memory:read:public \
+  --scope memory:read:kind:profile
+```
 
-## Operation scopes
+Create a grant with a preset:
+
+```bash
+npm run auth -- grant add --subject owner --preset owner-full
+```
+
+List grants:
+
+```bash
+npm run auth -- grant list
+```
+
+Revoke a grant:
+
+```bash
+npm run auth -- grant revoke grant_abc123
+```
+
+## Presets
+
+- `public-read`: ask plus public profile, fact, and summary memory.
+- `owner-read`: ask plus all memory visibility and all memory kinds.
+- `maintainer`: ask, ingest, suggest, and common profile-building memory scopes.
+- `owner-full`: ask, ingest, suggest, all memory visibility, and all memory kinds.
+
+## Scopes
+
+Operation scopes:
 
 - `aiprofile:ask`: call `ask` with authenticated memory access.
 - `aiprofile:ingest`: call `ingest` to write new memory.
 - `aiprofile:suggest`: call `suggest_question`.
 
-## Memory sensitivity scopes
+Memory sensitivity scopes:
 
 - `memory:read:public`: read records with `visibility: "normal"`.
 - `memory:read:personal`: read records with `visibility: "sensitive"`.
 - `memory:read:secret`: read records with `visibility: "secret"`.
 
-## Memory category scopes
+Memory category scopes:
 
 - `memory:read:kind:profile`
 - `memory:read:kind:fact`
@@ -130,65 +123,9 @@ auth:
 - `memory:read:kind:private`
 - `memory:read:kind:*`
 
-## Recommended token bundles
+## Client notes
 
-Read-only public profile:
-
-```bash
-npm run auth -- token \
-  --scope aiprofile:ask \
-  --scope memory:read:public \
-  --scope memory:read:kind:profile \
-  --scope memory:read:kind:fact \
-  --scope memory:read:kind:summary
-```
-
-Owner read access:
-
-```bash
-npm run auth -- token \
-  --scope aiprofile:ask \
-  --scope memory:read:public \
-  --scope memory:read:personal \
-  --scope memory:read:secret \
-  --scope memory:read:kind:*
-```
-
-Ingest-capable client:
-
-```bash
-npm run auth -- token \
-  --scope aiprofile:ask \
-  --scope aiprofile:ingest \
-  --scope aiprofile:suggest \
-  --scope memory:read:public \
-  --scope memory:read:personal \
-  --scope memory:read:kind:profile \
-  --scope memory:read:kind:preference \
-  --scope memory:read:kind:principle \
-  --scope memory:read:kind:communication_style
-```
-
-## Expiration and rotation
-
-Tokens expire after 30 days by default. Generate a new token before expiry and update the MCP client configuration.
-
-Local JWTs are self-contained, so v1 does not support server-side revocation for a single token. If a token is exposed, remove it from the affected client or config, issue a narrower replacement, and stop any publicly reachable tunnel until exposed clients are under control.
-
-## Public tunnel guidance
-
-When using ngrok or another public HTTPS tunnel, generate a token bound to the public MCP URL:
-
-```bash
-npm run auth -- token \
-  --resource https://abc123.ngrok-free.app/mcp \
-  --scope aiprofile:ask \
-  --scope aiprofile:ingest \
-  --scope aiprofile:suggest \
-  --scope memory:read:public \
-  --scope memory:read:personal \
-  --scope memory:read:secret \
-  --scope memory:read:kind:*
-```
-
-Do not keep public tunnels open longer than needed. Anonymous access remains limited, but a public tunnel still exposes your local MCP endpoint to the internet.
+- Desktop and terminal clients that run on the same machine can usually use `http://localhost:3000/mcp`.
+- ChatGPT and other web-hosted clients must use HTTPS, usually through ngrok while testing locally.
+- If OAuth fails after restarting ngrok, update `auth.issuer`, `auth.resource`, restart AIProfile, and create a new grant for the new resource URL.
+- If a client reports insufficient scope, revoke the old grant and create a new grant with the needed preset or explicit scopes.

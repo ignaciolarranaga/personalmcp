@@ -49,24 +49,42 @@ http://localhost:3000/mcp
 
 The first `npm start` asks you to create a memory password. AIProfile uses that password to initialize encrypted storage automatically. Remember it or store it securely; encrypted memory cannot be recovered if the password is lost.
 
-By default, clients without a token can only use public-safe `ask`. To connect as the owner, generate a Bearer token after the encrypted vault exists:
+By default, unauthenticated clients can only use public-safe `ask`. To connect ChatGPT, Claude, Codex, or another OAuth-capable MCP client with owner permissions, create an OAuth grant after the encrypted vault exists:
 
 ```bash
-npm run auth -- token \
-  --scope aiprofile:ask \
-  --scope aiprofile:ingest \
-  --scope aiprofile:suggest \
-  --scope memory:read:public \
-  --scope memory:read:personal \
-  --scope memory:read:secret \
-  --scope memory:read:kind:*
+npm run auth -- grant add \
+  --subject ignaciolarranaga \
+  --preset owner-full
 ```
 
-Configure your MCP client to send:
+The command prints a one-time approval code. Add `http://localhost:3000/mcp` in a desktop or terminal MCP client that can reach your machine directly, then complete the OAuth flow in the browser by entering that code.
 
-```http
-Authorization: Bearer <token>
+For ChatGPT or another web-hosted client, expose your local server through HTTPS first:
+
+```bash
+ngrok http 3000
 ```
+
+Set `auth.resource` and `auth.issuer` in `config.yaml` to the public ngrok origin and MCP URL, then restart AIProfile:
+
+```yaml
+auth:
+  mode: local
+  anonymous_enabled: true
+  issuer: https://abc123.ngrok-free.app
+  resource: https://abc123.ngrok-free.app/mcp
+```
+
+Create the grant against that public resource:
+
+```bash
+npm run auth -- grant add \
+  --subject chatgpt-owner \
+  --preset owner-full \
+  --resource https://abc123.ngrok-free.app/mcp
+```
+
+Then add `https://abc123.ngrok-free.app/mcp` in ChatGPT, Claude, or Codex and approve with the one-time code. The `subject` is only a local audit label; possession of the one-time code authorizes the connection. Revoke access later with `npm run auth -- grant revoke <grant-id>`.
 
 ## Basic Usage
 
