@@ -1,5 +1,7 @@
 coverage
 dist
+docs/.vitepress/.temp
+docs/.vitepress/dist
 memory
 memory_backup_*
 models

@@ -1,11 +1,8 @@
-# AIProfile Authentication
+# Authentication
 
-AIProfile uses local Bearer tokens for HTTP MCP authentication. Tokens are issued by the local CLI
-after verifying the encrypted memory master password, and the server validates them on every MCP
-request.
+AIProfile uses local Bearer tokens for HTTP MCP authentication. Tokens are issued by the local CLI after verifying the encrypted memory master password, and the server validates them on every MCP request.
 
-This is a local-first security model rather than a hosted OAuth authorization server. It follows the
-MCP transport pattern of sending:
+This is a local-first security model rather than a hosted OAuth authorization server. It follows the MCP transport pattern of sending:
 
 ```http
 Authorization: Bearer <token>
@@ -13,31 +10,26 @@ Authorization: Bearer <token>
 
 ## Overview
 
-By default, `auth.mode` is `local`. The server accepts both anonymous and token-authenticated MCP
-connections:
+By default, `auth.mode` is `local`. The server accepts both anonymous and token-authenticated MCP connections:
 
 - Anonymous clients get a limited public surface.
 - Authenticated clients get tools and memory access according to token scopes.
-- Tokens are signed from the encrypted memory vault key, so token issuance requires the memory
-  master password.
+- Tokens are signed from the encrypted memory vault key, so token issuance requires the memory master password.
 - Tokens expire after 30 days by default.
 
-## Anonymous Access
+## Anonymous access
 
-Unauthenticated clients can only call `ask` in public-safe mode. Anonymous answers read only memory
-records with `visibility: "normal"` from generic categories:
+Unauthenticated clients can only call `ask` in public-safe mode. Anonymous answers read only memory records with `visibility: "normal"` from generic categories:
 
 - `profile`
 - `fact`
 - `summary`
 
-Anonymous clients cannot call `ingest` or `suggest_question`, and they cannot read personal,
-private, or sensitive memory.
+Anonymous clients cannot call `ingest` or `suggest_question`, and they cannot read personal, private, or sensitive memory.
 
-## Creating Tokens
+## Creating tokens
 
-Create tokens after the encrypted memory vault exists. The first `npm start` or
-`npx aiprofile serve` creates the vault and asks for the memory password.
+Create tokens after the encrypted memory vault exists. The first `npm start` or `npx aiprofile serve` creates the vault and asks for the memory password.
 
 Owner token with broad local permissions:
 
@@ -55,7 +47,7 @@ npm run auth -- token \
 Published package form:
 
 ```bash
-npx aiprofile auth token \
+npx --yes --ignore-scripts=false aiprofile auth token \
   --scope aiprofile:ask \
   --scope aiprofile:ingest \
   --scope aiprofile:suggest \
@@ -71,8 +63,7 @@ The default expiration is `30d`. Override it with `--expires-in`:
 npm run auth -- token --scope aiprofile:ask --expires-in 24h
 ```
 
-If the MCP endpoint resource URL differs from the default `http://localhost:3000/mcp`, bind the
-token to that URL:
+If the MCP endpoint resource URL differs from the default `http://localhost:3000/mcp`, bind the token to that URL:
 
 ```bash
 npm run auth -- token \
@@ -80,10 +71,9 @@ npm run auth -- token \
   --scope aiprofile:ask
 ```
 
-Bearer tokens are credentials. Treat them like passwords and avoid committing them to source
-control.
+Bearer tokens are credentials. Treat them like passwords and avoid committing them to source control.
 
-## Configuring MCP Clients
+## Configuring MCP clients
 
 Use URL `http://localhost:3000/mcp` with Streamable HTTP transport.
 
@@ -93,8 +83,7 @@ For owner-level access, configure the client to send this header on every reques
 Authorization: Bearer <token>
 ```
 
-If a client cannot send custom headers, it can still connect anonymously, but it will only have
-public-safe `ask`.
+If a client cannot send custom headers, it can still connect anonymously, but it will only have public-safe `ask`.
 
 ## Configuration
 
@@ -106,32 +95,27 @@ auth:
   anonymous_enabled: true
 ```
 
-`auth.mode: local` enables local Bearer tokens signed from the encrypted memory vault. In this mode,
-encrypted memory is required.
+`auth.mode: local` enables local Bearer tokens signed from the encrypted memory vault. In this mode, encrypted memory is required.
 
-`auth.mode: off` disables token checks and exposes the full MCP tool surface without authentication.
-Use it only for isolated local testing.
+`auth.mode: off` disables token checks and exposes the full MCP tool surface without authentication. Use it only for isolated local testing.
 
-`auth.anonymous_enabled: true` documents the intended anonymous access behavior. Anonymous access is
-limited to public-safe `ask`.
+`auth.anonymous_enabled: true` documents the intended anonymous access behavior. Anonymous access is limited to public-safe `ask`.
 
-`auth.resource` may be set when the externally visible MCP URL is not
-`http://localhost:<port>/mcp`, such as when using a public HTTPS tunnel. Tokens are audience-bound to
-the resource URL.
+`auth.resource` may be set when the externally visible MCP URL is not `http://localhost:<port>/mcp`, such as when using a public HTTPS tunnel. Tokens are audience-bound to the resource URL.
 
-## Operation Scopes
+## Operation scopes
 
 - `aiprofile:ask`: call `ask` with authenticated memory access.
 - `aiprofile:ingest`: call `ingest` to write new memory.
 - `aiprofile:suggest`: call `suggest_question`.
 
-## Memory Sensitivity Scopes
+## Memory sensitivity scopes
 
 - `memory:read:public`: read records with `visibility: "normal"`.
 - `memory:read:personal`: read records with `visibility: "sensitive"`.
 - `memory:read:secret`: read records with `visibility: "secret"`.
 
-## Memory Category Scopes
+## Memory category scopes
 
 - `memory:read:kind:profile`
 - `memory:read:kind:fact`
@@ -146,7 +130,7 @@ the resource URL.
 - `memory:read:kind:private`
 - `memory:read:kind:*`
 
-## Recommended Token Bundles
+## Recommended token bundles
 
 Read-only public profile:
 
@@ -185,16 +169,13 @@ npm run auth -- token \
   --scope memory:read:kind:communication_style
 ```
 
-## Expiration and Rotation
+## Expiration and rotation
 
-Tokens expire after 30 days by default. Generate a new token before expiry and update the MCP client
-configuration.
+Tokens expire after 30 days by default. Generate a new token before expiry and update the MCP client configuration.
 
-Local JWTs are self-contained, so v1 does not support server-side revocation for a single token. If
-a token is exposed, remove it from the affected client/config, issue a narrower replacement, and stop
-any publicly reachable tunnel until exposed clients are under control.
+Local JWTs are self-contained, so v1 does not support server-side revocation for a single token. If a token is exposed, remove it from the affected client or config, issue a narrower replacement, and stop any publicly reachable tunnel until exposed clients are under control.
 
-## Public Tunnel Guidance
+## Public tunnel guidance
 
 When using ngrok or another public HTTPS tunnel, generate a token bound to the public MCP URL:
 
@@ -210,5 +191,4 @@ npm run auth -- token \
   --scope memory:read:kind:*
 ```
 
-Do not keep public tunnels open longer than needed. Anonymous access remains limited, but a public
-tunnel still exposes your local MCP endpoint to the internet.
+Do not keep public tunnels open longer than needed. Anonymous access remains limited, but a public tunnel still exposes your local MCP endpoint to the internet.
