@@ -60,6 +60,7 @@ export interface MemoryDatabase {
   queryRecords(filters?: {
     status?: string;
     excludeVisibility?: string[];
+    includeVisibility?: string[];
     kind?: string[];
   }): MemoryRecord[];
   searchRecords(query: string, limit?: number): MemoryRecord[];
@@ -165,6 +166,13 @@ export interface GenerateOutput {
 export interface Config {
   server?: {
     port?: number;
+  };
+  auth?: {
+    mode?: "off" | "local";
+    issuer?: string;
+    resource?: string;
+    anonymous_enabled?: boolean;
+    signing_key?: Buffer;
   };
   owner: {
     name: string | null;

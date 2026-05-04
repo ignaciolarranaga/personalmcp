@@ -9,6 +9,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer } from "../src/server.js";
+import type { ServerAccessMode } from "../src/server.js";
 import { createMemoryDatabase } from "../src/memory/db.js";
 import { initializeMemoryStorage, parseCliOptions } from "../src/memory/unlock.js";
 import { unlockOrCreateVault } from "../src/memory/vault.js";
@@ -77,6 +78,15 @@ describe("MCP integration", () => {
 
     expect(toolNames).toEqual(["ask", "ingest", "suggest_question"]);
     expect(result.tools.find((tool) => tool.name === "ingest")?.inputSchema).toBeDefined();
+  });
+
+  it("anonymous MCP surface exposes only public-safe tools", async () => {
+    const server = await startTestServer({ accessMode: "anonymous" });
+
+    const result = await server.client.listTools();
+    const toolNames = result.tools.map((tool) => tool.name).sort();
+
+    expect(toolNames).toEqual(["ask"]);
   });
 
   it("returns the bootstrap question when memory is empty", async () => {
@@ -482,6 +492,7 @@ async function startTestServer(
     debugLogger?: DebugLogger;
     memPath?: string;
     db?: MemoryDatabase;
+    accessMode?: ServerAccessMode;
   } = {},
 ): Promise<RunningTestServer> {
   const memPath = options.memPath ?? mkdtempSync(join(tmpdir(), "aiprofile-test-"));
@@ -491,7 +502,9 @@ async function startTestServer(
     ...options.config,
     memory: { path: memPath, mode: "plain", storage: db, ...options.config?.memory },
   });
-  const mcpServer = createServer(llm, config, options.debugLogger);
+  const mcpServer = createServer(llm, config, options.debugLogger, {
+    accessMode: options.accessMode,
+  });
   const serverTransport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
   });

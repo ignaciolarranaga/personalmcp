@@ -40,7 +40,29 @@ The first `npm start` asks you to create a memory password. AIProfile uses that 
 initialize encrypted storage automatically. Remember it or store it securely; encrypted memory
 cannot be recovered if the password is lost.
 
-Once running, connect your MCP client to `http://localhost:3000/mcp` — see the section below for your client.
+By default, clients without a token can only use public-safe `ask`. To connect as the owner with
+permission to read all memory and ingest new content, generate a Bearer token in another terminal
+after the first server startup has created the encrypted vault:
+
+```bash
+node dist/index.js auth token \
+  --scope aiprofile:ask \
+  --scope aiprofile:ingest \
+  --scope aiprofile:suggest \
+  --scope memory:read:public \
+  --scope memory:read:personal \
+  --scope memory:read:secret \
+  --scope memory:read:kind:*
+```
+
+Once running, connect your MCP client to `http://localhost:3000/mcp` and configure it to send:
+
+```http
+Authorization: Bearer <token>
+```
+
+See [Authentication](docs/auth.md) for the security model, scope reference, and narrower token
+examples.
 
 ### NPX usage
 
@@ -49,6 +71,14 @@ After the package is published, you can use the same commands without cloning th
 ```bash
 npx aiprofile setup-model
 npx aiprofile serve
+npx aiprofile auth token \
+  --scope aiprofile:ask \
+  --scope aiprofile:ingest \
+  --scope aiprofile:suggest \
+  --scope memory:read:public \
+  --scope memory:read:personal \
+  --scope memory:read:secret \
+  --scope memory:read:kind:*
 npx aiprofile memory export --format jsonl
 npx aiprofile memory import memory-backup.md
 ```
@@ -62,6 +92,17 @@ npx --yes --ignore-scripts=false aiprofile serve
 ```
 
 If the same error persists after retrying, clear npm's failed npx install cache and run the command again.
+
+---
+
+## Authentication
+
+AIProfile uses local Bearer tokens by default. The memory master password unlocks the encrypted
+vault, and the `auth token` command uses that vault to issue scoped tokens for MCP clients.
+Unauthenticated clients can connect, but they are limited to public-safe `ask`.
+
+Use the broad owner token in Quick Start for your primary local client, or see
+[Authentication](docs/auth.md) for narrower read-only and ingest-capable bundles.
 
 ---
 
@@ -100,6 +141,11 @@ Port `3000` is forwarded automatically for the MCP endpoint at `/mcp`.
 
 ## Connecting MCP Clients
 
+AIProfile accepts unauthenticated MCP connections, but those connections are intentionally limited
+to public-safe `ask`. Owner-level use requires a Bearer token generated with `aiprofile auth token`.
+Use the token as an `Authorization: Bearer <token>` header in MCP clients that support custom
+headers. See [Authentication](docs/auth.md) for examples and supported scopes.
+
 ### Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
@@ -129,11 +175,13 @@ The server is now available in all Claude Code sessions. Run `claude mcp list` t
 
 1. Open **Settings → Tools → Add MCP Server**
 2. Enter the URL: `http://localhost:3000/mcp`
-3. Save — the three AIProfile tools will appear immediately
+3. Save — unauthenticated access is limited to public-safe `ask`; add the Bearer token header for
+   owner access where supported
 
 ### Any other MCP-compatible client
 
-Use URL `http://localhost:3000/mcp` with transport type **Streamable HTTP**.
+Use URL `http://localhost:3000/mcp` with transport type **Streamable HTTP**. If the client supports
+custom headers, include `Authorization: Bearer <token>` for authenticated tools and memory access.
 
 ### Claude Custom Connector with ngrok
 
@@ -162,7 +210,10 @@ Add the MCP endpoint path when configuring Claude:
 https://abc123.ngrok-free.app/mcp
 ```
 
-ngrok provides the public HTTPS certificate and forwards traffic to the local HTTP server, so AIProfile does not need built-in HTTPS for this flow. Stop the ngrok process when you are done testing.
+ngrok provides the public HTTPS certificate and forwards traffic to the local HTTP server, so
+AIProfile does not need built-in HTTPS for this flow. Public tunnels should use a Bearer token;
+anonymous access is intentionally limited to public-safe `ask`. Stop the ngrok process when you are
+done testing.
 
 ---
 
@@ -196,7 +247,12 @@ Open the Inspector UI, usually `http://localhost:6274`, then connect with:
 - **Transport type:** `Streamable HTTP`
 - **URL:** `http://localhost:3000/mcp`
 
-After connecting, open the **Tools** tab and run **List Tools**. You should see:
+After connecting, open the **Tools** tab and run **List Tools**. Without a Bearer token, you should
+only see:
+
+- `ask`
+
+With an owner token configured, you should see:
 
 - `ingest`
 - `ask`
@@ -330,6 +386,10 @@ llm:
 memory:
   path: ./memory
   mode: encrypted # default; set to plain only for local testing/debugging
+
+auth:
+  mode: local # default; local Bearer tokens signed from the encrypted memory vault
+  anonymous_enabled: true # unauthenticated clients can only use public-safe ask
 
 safety:
   allow_first_person: true
@@ -566,8 +626,11 @@ User → Claude Desktop → ask(
 ## Security Notes
 
 - The local server uses HTTP on `localhost`. Use a tunnel such as ngrok when a public HTTPS URL is required.
-- Do not keep a public tunnel open longer than needed without adding authentication or tunnel-level access control.
+- Local auth is enabled by default. Unauthenticated clients can only use public-safe `ask`; owner
+  access requires a Bearer token.
+- Do not keep a public tunnel open longer than needed, and use a Bearer token or tunnel-level access control.
 - Memory files are encrypted on disk by default and ignored by Git.
 - Keep your memory password safe. If it is lost, encrypted memory cannot be recovered.
 - Private memory is not exposed when `audience` is `public` or `unknown`.
+- See [Authentication](docs/auth.md) for scopes, token examples, and rotation guidance.
 - No shell execution tools are exposed through MCP.

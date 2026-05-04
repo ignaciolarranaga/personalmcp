@@ -2,6 +2,7 @@ import { buildChatSystem, buildChatUser } from "../prompts/chatPrompt.js";
 import { readAllMemory, countMemoryItems } from "../memory/readMemory.js";
 import { requireMemoryDatabase } from "../memory/storage.js";
 import type { LlmProvider } from "../llm/LlmProvider.js";
+import type { MemoryReadAccess } from "../memory/readMemory.js";
 import type { AskInput, AskOutput, Config, Confidence, Authority } from "../types.js";
 
 const INSUFFICIENT_MEMORY_THRESHOLD = 3;
@@ -10,15 +11,22 @@ export async function handleAsk(
   input: AskInput,
   llm: LlmProvider,
   config: Config,
+  options: { memoryAccess?: MemoryReadAccess } = {},
 ): Promise<AskOutput> {
   const db = requireMemoryDatabase(config);
   const mode = input.mode ?? "about_owner";
   const audience = input.audience ?? "unknown";
-  const excludePrivate =
-    !config.safety.public_can_access_private_memory &&
-    (audience === "public" || audience === "unknown");
+  const explicitMemoryAccess = options.memoryAccess !== undefined;
+  const memoryAccess =
+    options.memoryAccess ??
+    (!config.safety.public_can_access_private_memory &&
+    (audience === "public" || audience === "unknown")
+      ? { includeVisibility: ["normal", "sensitive"] }
+      : undefined);
 
-  const itemCount = countMemoryItems(db);
+  const itemCount = explicitMemoryAccess
+    ? countMemoryItems(db, memoryAccess)
+    : countMemoryItems(db);
   if (itemCount < INSUFFICIENT_MEMORY_THRESHOLD) {
     return {
       answer:
@@ -30,7 +38,7 @@ export async function handleAsk(
     };
   }
 
-  const memory = readAllMemory(db, excludePrivate);
+  const memory = readAllMemory(db, memoryAccess);
   const system = buildChatSystem(memory, mode, config.safety);
   const prompt = buildChatUser(input.question, input.context);
 

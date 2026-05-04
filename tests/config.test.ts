@@ -23,6 +23,10 @@ describe("config", () => {
           path: "./memory",
           mode: "encrypted",
         },
+        auth: {
+          mode: "local",
+          anonymous_enabled: true,
+        },
       });
     } finally {
       process.chdir(originalCwd);

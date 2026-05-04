@@ -9,6 +9,12 @@ export interface CommonCommandOptions {
 
 export type ServeCommandOptions = CommonCommandOptions;
 
+export interface AuthTokenCommandOptions extends CommonCommandOptions {
+  scopes: string[];
+  expiresIn: string;
+  resource?: string;
+}
+
 export interface MemoryCommandOptions extends CommonCommandOptions {
   format: MemoryFormat;
 }
@@ -21,6 +27,7 @@ export interface SetupModelCommandOptions {
 
 export interface CliHandlers {
   serve: (options: ServeCommandOptions) => Promise<void>;
+  issueAuthToken: (options: AuthTokenCommandOptions) => Promise<void>;
   exportMemory: (options: MemoryCommandOptions) => Promise<void>;
   importMemory: (filePath: string, options: MemoryCommandOptions) => Promise<void>;
   setupModel: (options: SetupModelCommandOptions) => Promise<void>;
@@ -45,6 +52,20 @@ export function createCliProgram(handlers: CliHandlers): Command {
     .option("--password-file <path>", "Read memory password from file")
     .action(async (options: CommanderCommonOptions) => {
       await handlers.serve(toCommonOptions(options));
+    });
+
+  const auth = program.command("auth").description("Create local Bearer tokens for MCP auth");
+
+  auth
+    .command("token")
+    .description("Issue a scoped Bearer token using the memory master password")
+    .option("--scope <scope>", "Scope to grant. Repeat for multiple scopes.", collectScope, [])
+    .option("--expires-in <duration>", "Token lifetime, e.g. 24h or 30d", "30d")
+    .option("--resource <url>", "MCP resource URL this token may access")
+    .option("--debug", "Enable debug logging")
+    .option("--password-file <path>", "Read memory password from file")
+    .action(async (options: CommanderAuthTokenOptions) => {
+      await handlers.issueAuthToken(toAuthTokenOptions(options));
     });
 
   const memory = program.command("memory").description("Import and export local memory records");
@@ -105,6 +126,12 @@ interface CommanderMemoryOptions extends CommanderCommonOptions {
   format: MemoryFormat;
 }
 
+interface CommanderAuthTokenOptions extends CommanderCommonOptions {
+  scope?: string[];
+  expiresIn: string;
+  resource?: string;
+}
+
 interface CommanderSetupModelOptions {
   model?: string;
   listModels?: boolean;
@@ -125,7 +152,20 @@ function toMemoryOptions(options: CommanderMemoryOptions): MemoryCommandOptions 
   };
 }
 
+function toAuthTokenOptions(options: CommanderAuthTokenOptions): AuthTokenCommandOptions {
+  return {
+    ...toCommonOptions(options),
+    scopes: options.scope ?? [],
+    expiresIn: options.expiresIn,
+    resource: options.resource,
+  };
+}
+
 function parseMemoryFormat(value: string): MemoryFormat {
   if (value === "markdown" || value === "jsonl") return value;
   throw new InvalidArgumentError("format must be either markdown or jsonl");
+}
+
+function collectScope(value: string, previous: string[]): string[] {
+  return [...previous, value];
 }

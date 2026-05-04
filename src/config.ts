@@ -25,6 +25,9 @@ export function loadConfig(configPath?: string): Config {
   if (parsed.memory.mode !== "encrypted" && parsed.memory.mode !== "plain") {
     throw new Error("config.yaml memory.mode must be either encrypted or plain");
   }
+  parsed.auth = parsed.auth ?? {};
+  parsed.auth.mode = parsed.auth.mode ?? "local";
+  parsed.auth.anonymous_enabled = parsed.auth.anonymous_enabled ?? true;
 
   return parsed;
 }
@@ -33,6 +36,10 @@ function defaultConfig(): Config {
   return {
     server: {
       port: 3000,
+    },
+    auth: {
+      mode: "local",
+      anonymous_enabled: true,
     },
     owner: {
       name: null,

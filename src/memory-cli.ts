@@ -6,6 +6,9 @@ const program = createCliProgram({
   serve: async () => {
     throw new Error("Use `aiprofile serve` to start the server.");
   },
+  issueAuthToken: async () => {
+    throw new Error("Use `aiprofile auth token` to issue a token.");
+  },
   exportMemory,
   importMemory,
   setupModel: async () => {

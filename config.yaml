@@ -1,6 +1,10 @@
 server:
   port: 3000
 
+auth:
+  mode: local
+  anonymous_enabled: true
+
 owner:
   name: null
   preferred_language: null

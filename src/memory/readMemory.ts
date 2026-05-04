@@ -1,4 +1,4 @@
-import type { MemoryDatabase, MemoryKind } from "../types.js";
+import type { MemoryDatabase, MemoryKind, MemoryRecord } from "../types.js";
 
 const KIND_LABEL: Record<MemoryKind, string> = {
   profile: "Profile",
@@ -28,15 +28,35 @@ const KIND_ORDER: MemoryKind[] = [
   "private",
 ];
 
+export interface MemoryReadAccess {
+  includeVisibility?: MemoryRecord["visibility"][];
+  kind?: MemoryKind[];
+}
+
 function confidenceLabel(score: number): string {
   if (score >= 0.75) return "high";
   if (score >= 0.4) return "medium";
   return "low";
 }
 
-export function readAllMemory(db: MemoryDatabase, excludePrivate = false): string {
-  const excludeVisibility: string[] = excludePrivate ? ["secret"] : [];
-  const records = db.queryRecords({ status: "active", excludeVisibility });
+export function readMemoryRecords(
+  db: MemoryDatabase,
+  access: boolean | MemoryReadAccess = false,
+): MemoryRecord[] {
+  if (typeof access === "boolean") {
+    const excludeVisibility = access ? ["secret"] : [];
+    return db.queryRecords({ status: "active", excludeVisibility });
+  }
+
+  return db.queryRecords({
+    status: "active",
+    includeVisibility: access.includeVisibility,
+    kind: access.kind,
+  });
+}
+
+export function readAllMemory(db: MemoryDatabase, access: boolean | MemoryReadAccess = false): string {
+  const records = readMemoryRecords(db, access);
 
   const byKind = new Map<MemoryKind, string[]>();
   for (const record of records) {
@@ -48,7 +68,6 @@ export function readAllMemory(db: MemoryDatabase, excludePrivate = false): strin
 
   const parts: string[] = [];
   for (const kind of KIND_ORDER) {
-    if (excludePrivate && kind === "private") continue;
     const lines = byKind.get(kind);
     if (!lines || lines.length === 0) continue;
     parts.push(`## ${KIND_LABEL[kind]}\n${lines.join("\n")}`);
@@ -57,6 +76,7 @@ export function readAllMemory(db: MemoryDatabase, excludePrivate = false): strin
   return parts.length > 0 ? parts.join("\n\n") : "";
 }
 
-export function countMemoryItems(db: MemoryDatabase): number {
+export function countMemoryItems(db: MemoryDatabase, access?: MemoryReadAccess): number {
+  if (access) return readMemoryRecords(db, access).length;
   return db.countRecords("active");
 }

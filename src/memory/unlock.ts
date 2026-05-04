@@ -10,6 +10,11 @@ export interface MemoryUnlockOptions {
   passwordFile?: string;
 }
 
+export interface MemoryStorageInitialization {
+  vaultKey?: Buffer;
+  vaultCreated: boolean;
+}
+
 export type CliOptions = MemoryUnlockOptions;
 
 export function parseCliOptions(argv: string[]): MemoryUnlockOptions {
@@ -44,15 +49,15 @@ export function parseCliOptions(argv: string[]): MemoryUnlockOptions {
 export async function initializeMemoryStorage(
   config: Config,
   options: MemoryUnlockOptions,
-): Promise<void> {
+): Promise<MemoryStorageInitialization> {
   const mode = config.memory.mode ?? "encrypted";
 
   if (mode === "plain") {
     config.memory.storage = createMemoryDatabase({ memPath: config.memory.path, mode: "plain" });
-    return;
+    return { vaultCreated: false };
   }
 
-  const password = await resolvePassword(config.memory.path, options);
+  const password = await resolveMemoryPassword(config.memory.path, options);
   const vault = unlockOrCreateVault(config.memory.path, password);
   config.memory.storage = createMemoryDatabase({
     memPath: config.memory.path,
@@ -63,9 +68,14 @@ export async function initializeMemoryStorage(
   if (vault.created) {
     console.error(`[AIProfile] Initialized encrypted memory vault at ${vault.metadataPath}`);
   }
+
+  return { vaultKey: vault.key, vaultCreated: vault.created };
 }
 
-async function resolvePassword(memPath: string, options: MemoryUnlockOptions): Promise<string> {
+export async function resolveMemoryPassword(
+  memPath: string,
+  options: MemoryUnlockOptions,
+): Promise<string> {
   if (process.env.AIPROFILE_PASSWORD) return process.env.AIPROFILE_PASSWORD;
 
   if (options.passwordFile) {

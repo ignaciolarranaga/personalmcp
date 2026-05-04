@@ -294,7 +294,12 @@ export function createMemoryDatabase(options: {
     },
 
     queryRecords(
-      filters: { status?: string; excludeVisibility?: string[]; kind?: string[] } = {},
+      filters: {
+        status?: string;
+        excludeVisibility?: string[];
+        includeVisibility?: string[];
+        kind?: string[];
+      } = {},
     ): MemoryRecord[] {
       const conditions: string[] = [];
       const params: (string | number)[] = [];
@@ -308,6 +313,12 @@ export function createMemoryDatabase(options: {
         const placeholders = filters.excludeVisibility.map(() => "?").join(", ");
         conditions.push(`visibility NOT IN (${placeholders})`);
         params.push(...filters.excludeVisibility);
+      }
+
+      if (filters.includeVisibility && filters.includeVisibility.length > 0) {
+        const placeholders = filters.includeVisibility.map(() => "?").join(", ");
+        conditions.push(`visibility IN (${placeholders})`);
+        params.push(...filters.includeVisibility);
       }
 
       if (filters.kind && filters.kind.length > 0) {

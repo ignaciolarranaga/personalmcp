@@ -11,6 +11,7 @@ describe("CLI", () => {
     });
 
     expect(output()).toContain("serve");
+    expect(output()).toContain("auth");
     expect(output()).toContain("memory");
     expect(output()).toContain("setup-model");
   });
@@ -94,6 +95,33 @@ describe("CLI", () => {
     });
   });
 
+  it("parses auth token options", async () => {
+    const { handlers, program } = makeTestProgram();
+
+    await runCliProgram(program, [
+      "auth",
+      "token",
+      "--scope",
+      "aiprofile:ask",
+      "--scope",
+      "aiprofile:ingest",
+      "--expires-in",
+      "24h",
+      "--resource",
+      "http://localhost:3000/mcp",
+      "--password-file",
+      "./local-password-file",
+    ]);
+
+    expect(handlers.issueAuthToken).toHaveBeenCalledWith({
+      debugEnabled: false,
+      passwordFile: "./local-password-file",
+      scopes: ["aiprofile:ask", "aiprofile:ingest"],
+      expiresIn: "24h",
+      resource: "http://localhost:3000/mcp",
+    });
+  });
+
   it("rejects the removed fallback option", async () => {
     const { program } = makeTestProgram();
 
@@ -108,6 +136,7 @@ function makeTestProgram() {
   let capturedOutput = "";
   const handlers: CliHandlers = {
     serve: vi.fn(async () => undefined),
+    issueAuthToken: vi.fn(async () => undefined),
     exportMemory: vi.fn(async () => undefined),
     importMemory: vi.fn(async () => undefined),
     setupModel: vi.fn(async () => undefined),
