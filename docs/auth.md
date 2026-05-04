@@ -42,7 +42,7 @@ Create tokens after the encrypted memory vault exists. The first `npm start` or
 Owner token with broad local permissions:
 
 ```bash
-node dist/index.js auth token \
+npm run auth -- token \
   --scope aiprofile:ask \
   --scope aiprofile:ingest \
   --scope aiprofile:suggest \
@@ -68,14 +68,14 @@ npx aiprofile auth token \
 The default expiration is `30d`. Override it with `--expires-in`:
 
 ```bash
-node dist/index.js auth token --scope aiprofile:ask --expires-in 24h
+npm run auth -- token --scope aiprofile:ask --expires-in 24h
 ```
 
 If the MCP endpoint resource URL differs from the default `http://localhost:3000/mcp`, bind the
 token to that URL:
 
 ```bash
-node dist/index.js auth token \
+npm run auth -- token \
   --resource https://abc123.ngrok-free.app/mcp \
   --scope aiprofile:ask
 ```
@@ -151,7 +151,7 @@ the resource URL.
 Read-only public profile:
 
 ```bash
-node dist/index.js auth token \
+npm run auth -- token \
   --scope aiprofile:ask \
   --scope memory:read:public \
   --scope memory:read:kind:profile \
@@ -162,7 +162,7 @@ node dist/index.js auth token \
 Owner read access:
 
 ```bash
-node dist/index.js auth token \
+npm run auth -- token \
   --scope aiprofile:ask \
   --scope memory:read:public \
   --scope memory:read:personal \
@@ -173,7 +173,7 @@ node dist/index.js auth token \
 Ingest-capable client:
 
 ```bash
-node dist/index.js auth token \
+npm run auth -- token \
   --scope aiprofile:ask \
   --scope aiprofile:ingest \
   --scope aiprofile:suggest \
@@ -199,7 +199,7 @@ any publicly reachable tunnel until exposed clients are under control.
 When using ngrok or another public HTTPS tunnel, generate a token bound to the public MCP URL:
 
 ```bash
-node dist/index.js auth token \
+npm run auth -- token \
   --resource https://abc123.ngrok-free.app/mcp \
   --scope aiprofile:ask \
   --scope aiprofile:ingest \

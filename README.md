@@ -45,7 +45,7 @@ permission to read all memory and ingest new content, generate a Bearer token in
 after the first server startup has created the encrypted vault:
 
 ```bash
-node dist/index.js auth token \
+npm run auth -- token \
   --scope aiprofile:ask \
   --scope aiprofile:ingest \
   --scope aiprofile:suggest \
