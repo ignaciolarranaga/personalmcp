@@ -61,7 +61,7 @@ describe("setup-model", () => {
       free: 0,
       unifiedSize: 0,
     });
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const expectedPath = join(tempDir, "models", "qwen3-8b-q4_k_m.gguf");
     llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
 
@@ -78,7 +78,7 @@ describe("setup-model", () => {
 
   it("lets explicit curated model IDs bypass automatic selection", async () => {
     mockSystemMemory(128, 96);
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const expectedPath = join(tempDir, "models", "qwen3-4b-instruct-q4_k_m.gguf");
     llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
 
@@ -95,7 +95,7 @@ describe("setup-model", () => {
   });
 
   it("resolves curated model IDs and writes config when requested", async () => {
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const expectedPath = join(tempDir, "models", "llama-3.2-3b-instruct-q4_k_m.gguf");
     llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
 
@@ -121,7 +121,7 @@ describe("setup-model", () => {
   });
 
   it("resolves newer single-file curated model IDs", async () => {
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const expectedPath = join(tempDir, "models", "phi-4-q4_k_m.gguf");
     llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
 
@@ -141,7 +141,7 @@ describe("setup-model", () => {
   });
 
   it("keeps split curated model entrypoints as the first GGUF part", async () => {
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const expectedPath = join(tempDir, "models", "gpt-oss-120b-q4_k_m-00001-of-00002.gguf");
     llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
 
@@ -165,7 +165,7 @@ describe("setup-model", () => {
   });
 
   it("resolves custom model specs into the models directory without forcing a filename", async () => {
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const expectedPath = join(tempDir, "models", "Custom-Model.Q4_K_M.gguf");
     llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
 
@@ -187,7 +187,7 @@ describe("setup-model", () => {
   });
 
   it("skips downloading when a curated target already exists", async () => {
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const targetPath = join(tempDir, "models", "llama-3.2-3b-instruct-q4_k_m.gguf");
     mkdirSync(join(tempDir, "models"));
     writeFileSync(targetPath, "existing", "utf-8");
@@ -199,7 +199,7 @@ describe("setup-model", () => {
   });
 
   it("skips downloading split models only when all parts already exist", async () => {
-    const { setupModel } = await import("../src/setup-model.js");
+    const { setupModel } = await import("../src/commands/setup-model.js");
     const modelsDir = join(tempDir, "models");
     const firstPart = join(modelsDir, "gpt-oss-120b-q4_k_m-00001-of-00002.gguf");
     const secondPart = join(modelsDir, "gpt-oss-120b-q4_k_m-00002-of-00002.gguf");
@@ -213,7 +213,7 @@ describe("setup-model", () => {
   });
 
   it("prints curated recommendations with memory fit labels", async () => {
-    const { printModelRecommendations } = await import("../src/setup-model.js");
+    const { printModelRecommendations } = await import("../src/commands/setup-model.js");
 
     printModelRecommendations({
       totalRamGb: 8,
@@ -229,7 +229,7 @@ describe("setup-model", () => {
   });
 
   it("prints recommendations for 32GB machines", async () => {
-    const { printModelRecommendations } = await import("../src/setup-model.js");
+    const { printModelRecommendations } = await import("../src/commands/setup-model.js");
 
     printModelRecommendations({
       totalRamGb: 32,
@@ -244,7 +244,7 @@ describe("setup-model", () => {
   });
 
   it("prints recommendations for 64GB machines", async () => {
-    const { printModelRecommendations } = await import("../src/setup-model.js");
+    const { printModelRecommendations } = await import("../src/commands/setup-model.js");
 
     printModelRecommendations({
       totalRamGb: 64,
@@ -259,7 +259,7 @@ describe("setup-model", () => {
   });
 
   it("prints split-model recommendations for 128GB machines", async () => {
-    const { printModelRecommendations } = await import("../src/setup-model.js");
+    const { printModelRecommendations } = await import("../src/commands/setup-model.js");
 
     printModelRecommendations({
       totalRamGb: 128,
@@ -275,7 +275,7 @@ describe("setup-model", () => {
   });
 
   it("selects best curated models for representative RAM-only machines", async () => {
-    const { selectBestCuratedModel } = await import("../src/setup-model.js");
+    const { selectBestCuratedModel } = await import("../src/commands/setup-model.js");
 
     expect(selectBestCuratedModel(makeHardware(8)).id).toBe("llama-3.2-3b");
     expect(selectBestCuratedModel(makeHardware(16)).id).toBe("qwen3-8b");
@@ -285,14 +285,14 @@ describe("setup-model", () => {
   });
 
   it("falls back to qwen3-4b when no curated model is recommended", async () => {
-    const { selectBestCuratedModel } = await import("../src/setup-model.js");
+    const { selectBestCuratedModel } = await import("../src/commands/setup-model.js");
 
     expect(selectBestCuratedModel(makeHardware(2)).id).toBe("qwen3-4b");
   });
 
   it("falls back to RAM-only hardware detection when VRAM detection fails", async () => {
     llamaMocks.getLlama.mockRejectedValue(new Error("no backend"));
-    const { detectHardwareProfile } = await import("../src/setup-model.js");
+    const { detectHardwareProfile } = await import("../src/commands/setup-model.js");
 
     const hardware = await detectHardwareProfile();
 

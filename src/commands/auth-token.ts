@@ -1,12 +1,12 @@
-import { loadConfig } from "./config.js";
+import { loadConfig } from "../config.js";
 import {
   defaultAuthResource,
   deriveAuthSigningKey,
   issueLocalAuthToken,
   parseExpiresIn,
-} from "./auth.js";
-import { hasVault, unlockOrCreateVault } from "./memory/vault.js";
-import { resolveMemoryPassword, type MemoryUnlockOptions } from "./memory/unlock.js";
+} from "../auth.js";
+import { hasVault, unlockOrCreateVault } from "../memory/vault.js";
+import { resolveMemoryPassword, type MemoryUnlockOptions } from "../memory/unlock.js";
 
 export interface AuthTokenOptions extends MemoryUnlockOptions {
   scopes: string[];

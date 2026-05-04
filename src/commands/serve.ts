@@ -14,12 +14,12 @@ import {
   OPERATION_SCOPES,
   SUPPORTED_AUTH_SCOPES,
   verifyLocalAuthToken,
-} from "./auth.js";
-import { loadConfig } from "./config.js";
-import { createDebugLogger } from "./debug.js";
-import { NodeLlamaCppProvider } from "./llm/NodeLlamaCppProvider.js";
-import { initializeMemoryStorage, type MemoryUnlockOptions } from "./memory/unlock.js";
-import { createServer } from "./server.js";
+} from "../auth.js";
+import { loadConfig } from "../config.js";
+import { createDebugLogger } from "../debug.js";
+import { NodeLlamaCppProvider } from "../llm/NodeLlamaCppProvider.js";
+import { initializeMemoryStorage, type MemoryUnlockOptions } from "../memory/unlock.js";
+import { createServer } from "../server.js";
 
 export type StartServerOptions = MemoryUnlockOptions;
 

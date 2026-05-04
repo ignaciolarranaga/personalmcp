@@ -3,7 +3,7 @@ import { freemem, totalmem } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import yaml from "js-yaml";
 import { getLlama, resolveModelFile } from "node-llama-cpp";
-import type { Config } from "./types.js";
+import type { Config } from "../types.js";
 
 const MODELS_DIR = resolve("./models");
 const CONFIG_PATH = resolve("./config.yaml");

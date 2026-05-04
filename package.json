@@ -25,8 +25,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.scripts.json",
-    "lint": "eslint src scripts tests",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src tests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",

@@ -342,7 +342,8 @@ memory before upgrading, or start with a fresh `./memory/` directory and import 
 
 ### Inspecting and exporting memory
 
-Because memory lives in a binary database rather than readable files, use the memory CLI:
+Because memory lives in a binary database rather than readable files, use the `aiprofile memory`
+subcommand:
 
 ```bash
 # Export all active records to Markdown (stdout)
