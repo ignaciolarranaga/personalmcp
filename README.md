@@ -20,7 +20,8 @@ No cloud API required.
 ## Prerequisites
 
 - Node.js 22 or later
-- ~3 GB free disk space (for the default model)
+- Free disk space for the selected local model (`qwen3-4b` needs ~2.5 GB; setup may choose
+  a larger model on machines with more RAM/VRAM)
 - macOS, Linux, or Windows (Metal/CUDA acceleration detected automatically)
 - **C++ build tools** for the SQLite native addon — on macOS, run `xcode-select --install`
 
@@ -30,7 +31,7 @@ No cloud API required.
 
 ```bash
 npm install --ignore-scripts=false
-npm run setup-model   # downloads Qwen3-4B-Instruct (~2.5 GB)
+npm run setup-model   # downloads the recommended local model for this machine
 npm run build
 npm start             # starts the MCP server on http://localhost:3000/mcp
 npm start -- --debug  # optional: logs MCP calls and LLM prompt/output snippets
