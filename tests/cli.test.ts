@@ -1,7 +1,19 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { createCliProgram, runCliProgram, type CliHandlers } from "../src/cli.js";
 
 describe("CLI", () => {
+  it("prints the package version", async () => {
+    const { output, program } = makeTestProgram();
+
+    await expect(runCliProgram(program, ["--version"])).rejects.toMatchObject({
+      code: "commander.version",
+      exitCode: 0,
+    });
+
+    expect(output().trim()).toBe(readPackageVersion());
+  });
+
   it("shows top-level help with the expected commands", async () => {
     const { output, program } = makeTestProgram();
 
@@ -195,4 +207,14 @@ function configureTestCommand(
   for (const subcommand of command.commands) {
     configureTestCommand(subcommand, outputConfig);
   }
+}
+
+function readPackageVersion(): string {
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ) as { version?: unknown };
+  if (typeof packageJson.version !== "string") {
+    throw new Error("package.json must define a string version.");
+  }
+  return packageJson.version;
 }

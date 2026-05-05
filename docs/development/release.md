@@ -27,7 +27,7 @@ npm version minor
 npm version major
 ```
 
-Keep the Commander version in `src/cli.ts` in sync with `package.json` when changing versions.
+AIProfile reads user-facing version metadata from `package.json` at runtime.
 
 For the initial package-name reservation release, use the existing `0.1.0` version and skip this step.
 

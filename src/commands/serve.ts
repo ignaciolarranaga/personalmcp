@@ -35,6 +35,7 @@ import {
 } from "../oauth.js";
 import { createServer } from "../server.js";
 import type { ServerAccessMode } from "../server.js";
+import { AIPROFILE_VERSION } from "../version.js";
 
 export type StartServerOptions = MemoryUnlockOptions;
 
@@ -150,6 +151,7 @@ export async function startServer(options: StartServerOptions): Promise<void> {
   });
 
   httpServer.listen(port, () => {
+    console.error(`[AIProfile] AIProfile v${AIPROFILE_VERSION}`);
     console.error(`[AIProfile] Server ready on http://localhost:${port}/mcp`);
     if (authMode === "local") {
       console.error("[AIProfile] Unauthenticated clients are limited to public-safe ask.");

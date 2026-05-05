@@ -70,6 +70,15 @@ afterEach(async () => {
 });
 
 describe("MCP integration", () => {
+  it("advertises the package version through MCP server info", async () => {
+    const server = await startTestServer();
+
+    expect(server.client.getServerVersion()).toMatchObject({
+      name: "aiprofile",
+      version: readPackageVersion(),
+    });
+  });
+
   it("exposes the expected tools through MCP listTools", async () => {
     const server = await startTestServer();
 
@@ -676,6 +685,16 @@ function makeConfig(memPath: string, overrides: Partial<Config> = {}): Config {
       ...overrides.safety,
     },
   };
+}
+
+function readPackageVersion(): string {
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ) as { version?: unknown };
+  if (typeof packageJson.version !== "string") {
+    throw new Error("package.json must define a string version.");
+  }
+  return packageJson.version;
 }
 
 function listen(server: HttpServer): Promise<void> {

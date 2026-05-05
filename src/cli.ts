@@ -1,4 +1,5 @@
 import { Command, InvalidArgumentError } from "commander";
+import { AIPROFILE_VERSION } from "./version.js";
 
 export type MemoryFormat = "markdown" | "jsonl";
 
@@ -46,7 +47,7 @@ export function createCliProgram(handlers: CliHandlers): Command {
     .description(
       "A local-first MCP server for structured, agent-readable identity and context profiles",
     )
-    .version("0.2.2")
+    .version(AIPROFILE_VERSION)
     .showHelpAfterError()
     .showSuggestionAfterError();
 

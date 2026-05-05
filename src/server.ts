@@ -20,6 +20,7 @@ import { handleSuggestQuestion } from "./tools/suggestQuestion.js";
 import { noopDebugLogger, type DebugLogger } from "./debug.js";
 import type { LlmProvider } from "./llm/LlmProvider.js";
 import type { Config } from "./types.js";
+import { AIPROFILE_VERSION } from "./version.js";
 
 interface ToolResponse {
   [key: string]: unknown;
@@ -46,7 +47,7 @@ export function createServer(
   const accessMode = options.accessMode ?? (config.auth?.mode === "local" ? "scoped" : "full");
   const server = new McpServer({
     name: "aiprofile",
-    version: "0.1.0",
+    version: AIPROFILE_VERSION,
   });
 
   registerAboutResource(server, config);
