@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readFileSync,
   realpathSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -116,6 +117,31 @@ describe("setup-model", () => {
       },
       memory: {
         path: "./memory",
+      },
+    });
+  });
+
+  it("creates config.yaml from defaults before writing model settings", async () => {
+    rmSync(join(tempDir, "config.yaml"));
+    const { setupModel } = await import("../src/commands/setup-model.js");
+    const expectedPath = join(tempDir, "models", "qwen3-4b-instruct-q4_k_m.gguf");
+    llamaMocks.resolveModelFile.mockResolvedValue(expectedPath);
+
+    await setupModel({ model: "qwen3-4b", listModels: false, writeConfig: true });
+
+    expect(readConfig()).toMatchObject({
+      auth: {
+        mode: "local",
+        anonymous_enabled: true,
+      },
+      llm: {
+        model: "qwen3-4b",
+        model_path: "./models/qwen3-4b-instruct-q4_k_m.gguf",
+        provider: "node-llama-cpp",
+      },
+      memory: {
+        path: "./memory",
+        mode: "encrypted",
       },
     });
   });

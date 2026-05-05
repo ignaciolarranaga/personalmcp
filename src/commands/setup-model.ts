@@ -3,6 +3,7 @@ import { freemem, totalmem } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import yaml from "js-yaml";
 import { getLlama, resolveModelFile } from "node-llama-cpp";
+import { defaultConfig } from "../config.js";
 import type { Config } from "../types.js";
 
 const MODELS_DIR = resolve("./models");
@@ -649,12 +650,7 @@ function getCuratedModel(id: string): CuratedModel {
 }
 
 function writeModelConfig(model: string, modelPath: string): void {
-  let parsed: Config;
-  try {
-    parsed = yaml.load(readFileSync(CONFIG_PATH, "utf-8")) as Config;
-  } catch {
-    throw new Error(`Cannot read config file at ${CONFIG_PATH}. Make sure config.yaml exists.`);
-  }
+  const parsed = readConfigForUpdate();
 
   if (!parsed?.llm) {
     throw new Error("config.yaml must include llm settings to update the model.");
@@ -663,6 +659,18 @@ function writeModelConfig(model: string, modelPath: string): void {
   parsed.llm.model = model;
   parsed.llm.model_path = modelPath;
   writeFileSync(CONFIG_PATH, yaml.dump(parsed, { lineWidth: 100 }), "utf-8");
+}
+
+function readConfigForUpdate(): Config {
+  if (!existsSync(CONFIG_PATH)) {
+    return defaultConfig();
+  }
+
+  try {
+    return yaml.load(readFileSync(CONFIG_PATH, "utf-8")) as Config;
+  } catch {
+    throw new Error(`Cannot read config file at ${CONFIG_PATH}. Make sure config.yaml exists.`);
+  }
 }
 
 function printConfigInstructions(model: string, modelPath: string): void {

@@ -32,7 +32,7 @@ export function loadConfig(configPath?: string): Config {
   return parsed;
 }
 
-function defaultConfig(): Config {
+export function defaultConfig(): Config {
   return {
     server: {
       port: 3000,
