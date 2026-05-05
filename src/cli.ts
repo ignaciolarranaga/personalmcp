@@ -46,7 +46,7 @@ export function createCliProgram(handlers: CliHandlers): Command {
     .description(
       "A local-first MCP server for structured, agent-readable identity and context profiles",
     )
-    .version("0.2.1")
+    .version("0.2.2")
     .showHelpAfterError()
     .showSuggestionAfterError();
 
