@@ -92,9 +92,10 @@ npx --yes --ignore-scripts=false aiprofile serve
 
 ## 5. Create an owner grant
 
-In a third terminal, create a grant bound to the public MCP resource:
+In a third terminal, go to the same AIProfile workspace from step 1, then create a grant bound to the public MCP resource. The command reads `config.yaml` from the current directory and writes the grant into that workspace's local memory database.
 
 ```bash
+cd aiprofile-chatgpt-company
 npx --yes --ignore-scripts=false aiprofile auth grant add \
   --subject chatgpt-company-owner \
   --preset owner-full \
