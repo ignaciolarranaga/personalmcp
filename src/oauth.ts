@@ -212,6 +212,7 @@ export function createAuthorizationPage(
         <dt>Requested scopes</dt><dd>${escapeHtml(scopes)}</dd>
       </dl>
       <form method="post" action="/oauth/authorize">
+        ${hidden("response_type", params.responseType)}
         ${hidden("client_id", params.clientId)}
         ${hidden("redirect_uri", params.redirectUri)}
         ${hidden("scope", params.scope.join(" "))}

@@ -15,6 +15,7 @@ import { unlockOrCreateVault } from "../src/memory/vault.js";
 import {
   createAuthGrant,
   createAuthorizationCode,
+  createAuthorizationPage,
   exchangeAuthorizationCode,
   hashOAuthSecret,
   normalizeAuthorizationRequest,
@@ -207,6 +208,27 @@ describe("OAuth auth grants", () => {
           db,
         ),
       ).toThrow("Token grant is not active");
+    });
+  });
+
+  it("preserves response_type when posting the authorization approval form", () => {
+    withAuthDb(({ config, db }) => {
+      const client = registerOAuthClient(db, { redirect_uris: ["http://localhost/callback"] });
+      const params = normalizeAuthorizationRequest(
+        new URL(
+          `http://localhost/oauth/authorize?response_type=code&client_id=${
+            client.client_id
+          }&redirect_uri=${encodeURIComponent(
+            client.redirect_uris[0],
+          )}&scope=aiprofile%3Aask&code_challenge=test-challenge&code_challenge_method=S256&resource=${encodeURIComponent(
+            defaultAuthResource(config),
+          )}`,
+        ),
+      );
+
+      expect(createAuthorizationPage(params, client)).toContain(
+        'name="response_type" value="code"',
+      );
     });
   });
 
