@@ -63,8 +63,17 @@ export function buildExtractionUser(
   const instructionBlock = instructions
     ? `\nAdditional instructions from the owner: ${instructions}\n`
     : "";
+  const sourceGuidance =
+    sourceType === "document"
+      ? `
+Source interpretation:
+- Treat this document as personal content about the owner.
+- Documents such as resumes, bios, and imported PDFs may be written in third person or refer to the owner by name or pronouns.
+- Extract durable facts about that person as memory about the owner.
+`
+      : "";
 
-  return `Extract memory from the following ${sourceLabel}.${instructionBlock}
+  return `Extract memory from the following ${sourceLabel}.${instructionBlock}${sourceGuidance}
 
 Content:
 ---

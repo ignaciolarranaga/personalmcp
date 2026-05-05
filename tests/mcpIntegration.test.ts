@@ -198,6 +198,66 @@ describe("MCP integration", () => {
     expect(sources[0].content_hash).toHaveLength(16);
   });
 
+  it("extracts memory from third-person document content instead of silently adding zero items", async () => {
+    const documentContent = [
+      "Ignacio Larranaga is a software engineer who leads engineering and product teams.",
+      "He works on local-first AI profile tooling and prefers concise technical communication.",
+    ].join(" ");
+    const server = await startTestServer({
+      responses: [
+        (input) => {
+          const promptIncludesDocumentGuidance =
+            input.prompt.includes("third person") &&
+            input.prompt.includes("refer to the owner by name or pronouns") &&
+            input.prompt.includes("memory about the owner");
+
+          if (!promptIncludesDocumentGuidance) return JSON.stringify({ items: [] });
+
+          return JSON.stringify({
+            items: [
+              memoryItem("profile", "Ignacio Larranaga leads engineering and product teams."),
+              memoryItem("fact", "Ignacio Larranaga works on local-first AI profile tooling."),
+              memoryItem(
+                "preference",
+                "Ignacio Larranaga prefers concise technical communication.",
+              ),
+            ],
+          });
+        },
+      ],
+    });
+
+    const result = await callTool(server.client, "ingest", {
+      content: documentContent,
+      source_type: "document",
+      source_title: "Resume PDF",
+    });
+
+    expect(result.structuredContent).toMatchObject({
+      success: true,
+      memory_items_added: 3,
+      memory_items_updated: 0,
+      ignored_items: 0,
+    });
+    expect(server.llm.calls).toHaveLength(1);
+    expect(server.llm.calls[0].prompt).toContain("Extract memory from the following document.");
+
+    const records = server.db.queryRecords({ status: "active" });
+    expect(records.map((record) => record.text)).toEqual(
+      expect.arrayContaining([
+        "Ignacio Larranaga leads engineering and product teams.",
+        "Ignacio Larranaga works on local-first AI profile tooling.",
+        "Ignacio Larranaga prefers concise technical communication.",
+      ]),
+    );
+
+    expect(server.db.listSources()).toHaveLength(1);
+    expect(server.db.listSources()[0]).toMatchObject({
+      title: "Resume PDF",
+      type: "document",
+    });
+  });
+
   it("detects duplicate ingested content through MCP without calling the LLM again", async () => {
     const content = "I prefer async written updates and direct technical discussion.";
     const server = await startTestServer({
