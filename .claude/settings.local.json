@@ -12,7 +12,8 @@
       "WebFetch(domain:ignaciolarranaga.github.io)",
       "Bash(npx tsc *)",
       "Bash(git config *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git push *)"
     ]
   }
 }
