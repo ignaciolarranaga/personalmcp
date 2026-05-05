@@ -6,6 +6,7 @@ import {
 } from "node:http";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import {
   AuthError,
   defaultAuthIssuer,
@@ -33,6 +34,7 @@ import {
   revokeOAuthToken,
 } from "../oauth.js";
 import { createServer } from "../server.js";
+import type { ServerAccessMode } from "../server.js";
 
 export type StartServerOptions = MemoryUnlockOptions;
 
@@ -65,25 +67,28 @@ export async function startServer(options: StartServerOptions): Promise<void> {
 
   await llm.initialize();
 
-  const mcpServer = createServer(llm, config, debugLogger, {
-    accessMode: authMode === "local" ? "scoped" : "full",
-  });
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  });
-  await mcpServer.connect(transport);
+  const protectedSessions = new Map<string, McpHttpSession>();
+  const anonymousSessions = new Map<string, McpHttpSession>();
 
-  const anonymousServer =
-    authMode === "local"
-      ? createServer(llm, config, debugLogger, {
-          accessMode: "anonymous",
-        })
-      : undefined;
-  const anonymousTransport = anonymousServer
-    ? new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() })
-    : undefined;
-  if (anonymousServer && anonymousTransport) {
-    await anonymousServer.connect(anonymousTransport);
+  async function createMcpHttpSession(
+    accessMode: ServerAccessMode,
+    sessions: Map<string, McpHttpSession>,
+  ): Promise<McpHttpSession> {
+    const server = createServer(llm, config, debugLogger, { accessMode });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (sessionId) => {
+        sessions.set(sessionId, session);
+      },
+    });
+    const session = { server, transport };
+    transport.onclose = () => {
+      const sessionId = transport.sessionId;
+      if (sessionId) sessions.delete(sessionId);
+      void server.close();
+    };
+    await server.connect(transport);
+    return session;
   }
 
   const httpServer = createHttpServer(async (req, res) => {
@@ -99,11 +104,17 @@ export async function startServer(options: StartServerOptions): Promise<void> {
           config,
           resource: authResource,
           metadataUrl: authMetadataUrl,
-          protectedTransport: transport,
-          anonymousTransport: anonymousTransport!,
+          protectedSessions,
+          anonymousSessions,
+          createSession: createMcpHttpSession,
         });
       } else {
-        await transport.handleRequest(req, res);
+        await handleMcpSessionRequest(req, res, {
+          body: req.method === "POST" ? await readJsonBody(req) : undefined,
+          sessions: protectedSessions,
+          accessMode: "full",
+          createSession: createMcpHttpSession,
+        });
       }
       return;
     }
@@ -157,8 +168,17 @@ interface AuthRequestOptions {
   config: ReturnType<typeof loadConfig>;
   resource: string;
   metadataUrl: string;
-  protectedTransport: StreamableHTTPServerTransport;
-  anonymousTransport: StreamableHTTPServerTransport;
+  protectedSessions: Map<string, McpHttpSession>;
+  anonymousSessions: Map<string, McpHttpSession>;
+  createSession: (
+    accessMode: ServerAccessMode,
+    sessions: Map<string, McpHttpSession>,
+  ) => Promise<McpHttpSession>;
+}
+
+interface McpHttpSession {
+  server: Awaited<ReturnType<typeof createServer>>;
+  transport: StreamableHTTPServerTransport;
 }
 
 async function handleOAuthRegister(
@@ -282,7 +302,12 @@ async function handleAuthorizedMcpRequest(
       );
       return;
     }
-    await options.anonymousTransport.handleRequest(req, res, parsedBody);
+    await handleMcpSessionRequest(req, res, {
+      body: parsedBody,
+      sessions: options.anonymousSessions,
+      accessMode: "anonymous",
+      createSession: options.createSession,
+    });
     return;
   }
 
@@ -308,7 +333,55 @@ async function handleAuthorizedMcpRequest(
   }
 
   (req as IncomingMessage & { auth?: AuthInfo }).auth = authInfo;
-  await options.protectedTransport.handleRequest(req, res, parsedBody);
+  await handleMcpSessionRequest(req, res, {
+    body: parsedBody,
+    sessions: options.protectedSessions,
+    accessMode: "scoped",
+    createSession: options.createSession,
+  });
+}
+
+async function handleMcpSessionRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  options: {
+    body: unknown;
+    sessions: Map<string, McpHttpSession>;
+    accessMode: ServerAccessMode;
+    createSession: (
+      accessMode: ServerAccessMode,
+      sessions: Map<string, McpHttpSession>,
+    ) => Promise<McpHttpSession>;
+  },
+): Promise<void> {
+  const sessionId = firstHeader(req.headers["mcp-session-id"]);
+  const existingSession = sessionId ? options.sessions.get(sessionId) : undefined;
+  if (existingSession) {
+    await existingSession.transport.handleRequest(req, res, options.body);
+    return;
+  }
+
+  if (!sessionId && req.method === "POST" && isInitializeRequest(options.body)) {
+    const session = await options.createSession(options.accessMode, options.sessions);
+    await session.transport.handleRequest(req, res, options.body);
+    return;
+  }
+
+  res.writeHead(400, { "content-type": "application/json" });
+  res.end(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      error: {
+        code: -32000,
+        message: "Bad Request: No valid MCP session ID provided.",
+      },
+      id: null,
+    }),
+  );
+}
+
+function firstHeader(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function verifyAuthorizationHeader(authHeader: string, options: AuthRequestOptions): AuthInfo {
