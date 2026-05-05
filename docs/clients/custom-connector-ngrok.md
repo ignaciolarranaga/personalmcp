@@ -33,7 +33,7 @@ auth:
   resource: https://abc123.ngrok-free.app/mcp
 ```
 
-Restart AIProfile after changing `config.yaml`.
+Stop AIProfile after changing `config.yaml` and keep it stopped while you create the grant. With encrypted memory, the server loads the local database at startup, so the grant should exist before the server restarts.
 
 Create a grant bound to the public MCP URL:
 
@@ -42,6 +42,13 @@ npm run auth -- grant add \
   --subject chatgpt-owner \
   --preset owner-full \
   --resource https://abc123.ngrok-free.app/mcp
+npm run auth -- grant list
+```
+
+Restart AIProfile:
+
+```bash
+npm start
 ```
 
 Use this MCP URL in the remote client:
@@ -54,7 +61,7 @@ The client discovers OAuth metadata and opens the AIProfile authorization page. 
 
 Security notes:
 
-- Restart AIProfile and create a new grant whenever the tunnel URL changes.
+- Stop AIProfile, create a new grant, and restart AIProfile whenever the tunnel URL changes.
 - Keep public tunnels open only while needed.
 - Prefer narrow presets such as `public-read` for testing.
 - Revoke grants when testing is done.

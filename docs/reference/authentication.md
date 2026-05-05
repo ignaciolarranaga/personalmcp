@@ -127,5 +127,5 @@ Memory category scopes:
 
 - Desktop and terminal clients that run on the same machine can usually use `http://localhost:3000/mcp`.
 - ChatGPT and other web-hosted clients must use HTTPS, usually through ngrok while testing locally.
-- If OAuth fails after restarting ngrok, update `auth.issuer`, `auth.resource`, restart AIProfile, and create a new grant for the new resource URL.
+- If OAuth fails after restarting ngrok, update `auth.issuer` and `auth.resource`, stop AIProfile, create a new grant for the new resource URL, and restart AIProfile.
 - If a client reports insufficient scope, revoke the old grant and create a new grant with the needed preset or explicit scopes.

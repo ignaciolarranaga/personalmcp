@@ -70,14 +70,23 @@ auth:
   resource: https://abc123.ngrok-free.app/mcp
 ```
 
-Restart AIProfile, create a grant bound to the public resource, then add `https://abc123.ngrok-free.app/mcp` in ChatGPT, Claude, or Codex:
+Stop AIProfile, create a grant bound to the public resource, confirm the grant appears, then restart AIProfile. With encrypted memory, the server loads the local database at startup, so the grant should exist before the server restarts.
 
 ```bash
 npm run auth -- grant add \
   --subject chatgpt-owner \
   --preset owner-full \
   --resource https://abc123.ngrok-free.app/mcp
+npm run auth -- grant list
 ```
+
+Restart AIProfile:
+
+```bash
+npm start
+```
+
+Then add `https://abc123.ngrok-free.app/mcp` in ChatGPT, Claude, or Codex.
 
 The `subject` is only a local audit label. Possession of the one-time approval code authorizes the connection. See [Authentication](/reference/authentication) for narrower grants, scopes, revocation, and tunnel guidance.
 

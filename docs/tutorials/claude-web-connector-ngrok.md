@@ -74,17 +74,13 @@ auth:
   resource: https://redacted-ngrok.ngrok-free.app/mcp
 ```
 
-Restart AIProfile after saving the config:
-
-```bash
-npm start
-```
+Keep AIProfile stopped for the next step. With encrypted memory, the server loads the local database at startup, so the grant should exist before you restart the server.
 
 ![config.yaml updated with redacted ngrok URL](./assets/claude-web-connector-ngrok/04-config-yaml.svg)
 
 ## 5. Create an owner grant
 
-In a third terminal, create a grant bound to the public MCP resource:
+Create a grant bound to the public MCP resource while AIProfile is stopped:
 
 ```bash
 npm run auth -- grant add \
@@ -93,9 +89,21 @@ npm run auth -- grant add \
   --resource https://redacted-ngrok.ngrok-free.app/mcp
 ```
 
+Confirm the grant appears before restarting AIProfile:
+
+```bash
+npm run auth -- grant list
+```
+
 The command prints a one-time approval code. Keep it private. You will paste it into the AIProfile authorization page when Claude starts OAuth.
 
 ![Grant command output with one-time code partially redacted](./assets/claude-web-connector-ngrok/05-grant-output.svg)
+
+Restart AIProfile so it loads the grant:
+
+```bash
+npm start
+```
 
 ## 6. Add the custom connector in Claude
 
@@ -176,18 +184,23 @@ Confirm all three places use the same public URL:
 - `auth.issuer` in `config.yaml`.
 - `auth.resource` and the connector URL, including `/mcp`.
 
-If the ngrok URL changes, update `config.yaml`, restart AIProfile, and create a new grant for the new `resource` URL.
+If the ngrok URL changes, update `config.yaml`, stop AIProfile, create a new grant for the new `resource` URL, and then restart AIProfile.
 
 ### OAuth starts but the approval code fails
 
-Approval codes are one-time credentials. Create a fresh grant and use the new code.
+Approval codes are one-time credentials. Do not reuse an old code.
+
+If the page says `Approval code is not valid`, stop AIProfile, create a fresh grant from the same workspace as `config.yaml`, confirm it appears in `auth grant list`, restart AIProfile, then retry authorization with the new code.
 
 ```bash
 npm run auth -- grant add \
   --subject claude-web-owner \
   --preset owner-full \
   --resource https://redacted-ngrok.ngrok-free.app/mcp
+npm run auth -- grant list
 ```
+
+If `auth grant list` says `No auth grants`, you are likely in a different workspace or using a different `memory.path`. If you created a grant while AIProfile was already running, the running encrypted-memory server may also have overwritten the new grant with the snapshot it loaded at startup.
 
 ### Claude reports insufficient scope
 

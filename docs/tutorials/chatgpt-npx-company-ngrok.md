@@ -82,17 +82,13 @@ auth:
   resource: https://redacted-ngrok.ngrok-free.app/mcp
 ```
 
-Restart AIProfile after saving the config:
-
-```bash
-npx --yes --ignore-scripts=false aiprofile serve
-```
+Keep AIProfile stopped for the next step. With encrypted memory, the server loads the local database at startup, so the grant should exist before you restart the server.
 
 ![generated config.yaml updated with public OAuth URLs](./assets/chatgpt-npx-company-ngrok/04-config-yaml.svg)
 
 ## 5. Create an owner grant
 
-In a third terminal, go to the same AIProfile workspace from step 1, then create a grant bound to the public MCP resource. The command reads `config.yaml` from the current directory and writes the grant into that workspace's local memory database.
+In a terminal, go to the same AIProfile workspace from step 1, then create a grant bound to the public MCP resource while AIProfile is stopped. The command reads `config.yaml` from the current directory and writes the grant into that workspace's local memory database.
 
 ```bash
 cd aiprofile-chatgpt-company
@@ -102,9 +98,21 @@ npx --yes --ignore-scripts=false aiprofile auth grant add \
   --resource https://redacted-ngrok.ngrok-free.app/mcp
 ```
 
+Confirm the grant appears before restarting AIProfile:
+
+```bash
+npx --yes --ignore-scripts=false aiprofile auth grant list
+```
+
 The command prints a one-time approval code. Keep it private. You will paste it into the AIProfile authorization page when ChatGPT starts OAuth.
 
 ![npx grant output with redacted approval code](./assets/chatgpt-npx-company-ngrok/05-grant-output.svg)
+
+Restart AIProfile so it loads the grant:
+
+```bash
+npx --yes --ignore-scripts=false aiprofile serve
+```
 
 ## 6. Enable Developer Mode in ChatGPT
 
@@ -202,7 +210,7 @@ Confirm all three places use the same public URL:
 - `auth.issuer` in `config.yaml`.
 - `auth.resource` and the ChatGPT app URL, including `/mcp`.
 
-If the ngrok URL changes, update `config.yaml`, restart AIProfile, and create a new grant for the new `resource` URL.
+If the ngrok URL changes, update `config.yaml`, stop AIProfile, create a new grant for the new `resource` URL, and then restart AIProfile.
 
 ### Developer Mode is missing
 
@@ -214,14 +222,19 @@ You are likely using a data-only or deep-research company knowledge flow. AIProf
 
 ### OAuth starts but the approval code fails
 
-Approval codes are one-time credentials. Create a fresh grant and use the new code.
+Approval codes are one-time credentials. Do not reuse an old code.
+
+If the page says `Approval code is not valid`, stop AIProfile, create a fresh grant from the same workspace as `config.yaml`, confirm it appears in `auth grant list`, restart AIProfile, then retry authorization with the new code.
 
 ```bash
 npx --yes --ignore-scripts=false aiprofile auth grant add \
   --subject chatgpt-company-owner \
   --preset owner-full \
   --resource https://redacted-ngrok.ngrok-free.app/mcp
+npx --yes --ignore-scripts=false aiprofile auth grant list
 ```
+
+If `auth grant list` says `No auth grants`, you are likely in a different workspace or using a different `memory.path`. If you created a grant while AIProfile was already running, the running encrypted-memory server may also have overwritten the new grant with the snapshot it loaded at startup.
 
 ### ChatGPT reports insufficient scope
 
