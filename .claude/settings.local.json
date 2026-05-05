@@ -8,7 +8,11 @@
       "WebFetch(domain:node-llama-cpp.withcat.ai)",
       "Bash(npm install *)",
       "Bash(npm run *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "WebFetch(domain:ignaciolarranaga.github.io)",
+      "Bash(npx tsc *)",
+      "Bash(git config *)",
+      "Bash(git add *)"
     ]
   }
 }

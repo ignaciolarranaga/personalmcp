@@ -30,9 +30,7 @@ export const AUTH_SCOPE_PRESETS = {
   ],
   "owner-read": [
     "aiprofile:ask",
-    "memory:read:public",
-    "memory:read:personal",
-    "memory:read:secret",
+    "memory:read:*",
     "memory:read:kind:*",
   ],
   maintainer: [
@@ -50,9 +48,7 @@ export const AUTH_SCOPE_PRESETS = {
     "aiprofile:ask",
     "aiprofile:ingest",
     "aiprofile:suggest",
-    "memory:read:public",
-    "memory:read:personal",
-    "memory:read:secret",
+    "memory:read:*",
     "memory:read:kind:*",
   ],
 } as const;
