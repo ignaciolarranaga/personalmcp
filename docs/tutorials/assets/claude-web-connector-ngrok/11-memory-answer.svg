@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Claude memory-backed answer</title>
+  <desc id="desc">A redacted Claude screenshot showing an AIProfile ask tool call and a memory-backed answer about Alex Rivera.</desc>
+  <rect width="1280" height="760" fill="#f7f3ed"/>
+  <rect x="70" y="48" width="1140" height="664" rx="18" fill="#ffffff" stroke="#ded6c8"/>
+  <rect x="122" y="106" width="900" height="92" rx="14" fill="#f8f1e8"/>
+  <text x="154" y="144" fill="#2f271f" font-family="Arial, sans-serif" font-size="18" font-weight="700">You</text>
+  <text x="154" y="176" fill="#2f271f" font-family="Arial, sans-serif" font-size="18">What should Claude know before drafting a project update as Alex?</text>
+  <rect x="122" y="238" width="972" height="88" rx="14" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="154" y="290" fill="#5b21b6" font-family="Menlo, Consolas, monospace" font-size="18">AIProfile.ask(question="What should Claude know before drafting...")</text>
+  <rect x="122" y="368" width="972" height="236" rx="14" fill="#ffffff" stroke="#e8dfd3"/>
+  <text x="154" y="410" fill="#2f271f" font-family="Arial, sans-serif" font-size="20" font-weight="700">Claude</text>
+  <text x="154" y="454" fill="#2f271f" font-family="Arial, sans-serif" font-size="18">Draft the update in Alex's calm, concrete style. Start with the decision,</text>
+  <text x="154" y="486" fill="#2f271f" font-family="Arial, sans-serif" font-size="18">risk, or tradeoff, then give evidence and next steps. Avoid status theater.</text>
+  <text x="154" y="534" fill="#2f271f" font-family="Arial, sans-serif" font-size="18">For executives, lead with business impact. For engineers, include constraints,</text>
+  <text x="154" y="566" fill="#2f271f" font-family="Arial, sans-serif" font-size="18">risks, and implementation details.</text>
+  <text x="154" y="650" fill="#6b7280" font-family="Arial, sans-serif" font-size="16">Used memory: communication style, roadmap opinions, decision-record preference.</text>
+</svg>

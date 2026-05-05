@@ -11,6 +11,7 @@ export default defineConfig({
     siteTitle: "AIProfile",
     nav: [
       { text: "Guide", link: "/guide/quick-start" },
+      { text: "Tutorials", link: "/tutorials/" },
       { text: "Clients", link: "/clients/" },
       { text: "Reference", link: "/reference/tools" },
       { text: "Development", link: "/development/" },
@@ -26,6 +27,16 @@ export default defineConfig({
           { text: "Model Setup", link: "/guide/model-setup" },
           { text: "Memory", link: "/guide/memory" },
           { text: "Codespaces", link: "/guide/codespaces" },
+        ],
+      },
+      {
+        text: "Tutorials",
+        items: [
+          { text: "Overview", link: "/tutorials/" },
+          {
+            text: "Claude Custom Connector with ngrok",
+            link: "/tutorials/claude-web-connector-ngrok",
+          },
         ],
       },
       {

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Claude ingest call and result</title>
+  <desc id="desc">A redacted Claude screenshot showing an approved AIProfile ingest tool call and successful memory result.</desc>
+  <rect width="1280" height="760" fill="#f7f3ed"/>
+  <rect x="70" y="48" width="1140" height="664" rx="18" fill="#ffffff" stroke="#ded6c8"/>
+  <rect x="122" y="106" width="840" height="104" rx="14" fill="#f8f1e8"/>
+  <text x="154" y="144" fill="#2f271f" font-family="Arial, sans-serif" font-size="18" font-weight="700">You</text>
+  <text x="154" y="178" fill="#2f271f" font-family="Arial, sans-serif" font-size="18">Please ingest this synthetic persona into AIProfile...</text>
+  <rect x="122" y="250" width="972" height="176" rx="14" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="154" y="292" fill="#374151" font-family="Arial, sans-serif" font-size="18" font-weight="700">Tool call</text>
+  <text x="154" y="332" fill="#5b21b6" font-family="Menlo, Consolas, monospace" font-size="18">AIProfile.ingest</text>
+  <text x="154" y="370" fill="#4b5563" font-family="Arial, sans-serif" font-size="17">source_type: owner_answer</text>
+  <rect x="908" y="304" width="146" height="44" rx="10" fill="#2563eb"/>
+  <text x="981" y="333" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16" font-weight="700">Approved</text>
+  <rect x="122" y="466" width="972" height="146" rx="14" fill="#ecfdf5" stroke="#86efac"/>
+  <text x="154" y="508" fill="#166534" font-family="Arial, sans-serif" font-size="20" font-weight="700">AIProfile result</text>
+  <text x="154" y="550" fill="#166534" font-family="Arial, sans-serif" font-size="18">Processed "Alex Rivera synthetic persona". 9 new memory items added.</text>
+  <text x="154" y="586" fill="#166534" font-family="Arial, sans-serif" font-size="18">The persona is ready for memory-backed questions.</text>
+</svg>

@@ -2,6 +2,8 @@
 
 Web-hosted MCP clients such as ChatGPT connectors and Claude custom connectors connect from cloud infrastructure, so `localhost` URLs do not work there. Use ngrok or an equivalent tunnel to run AIProfile on your desktop while exposing a public HTTPS endpoint.
 
+For a full visual Claude walkthrough, see [Claude Custom Connector With ngrok](/tutorials/claude-web-connector-ngrok).
+
 Start AIProfile:
 
 ```bash

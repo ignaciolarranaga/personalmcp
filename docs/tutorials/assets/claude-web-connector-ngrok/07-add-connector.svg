@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Claude add custom connector form with MCP URL</title>
+  <desc id="desc">A redacted Claude modal screenshot showing an AIProfile connector name and HTTPS MCP URL.</desc>
+  <rect width="1280" height="760" fill="#efe7dc"/>
+  <rect x="326" y="96" width="628" height="568" rx="18" fill="#ffffff" stroke="#ded6c8"/>
+  <text x="374" y="158" fill="#2f271f" font-family="Arial, sans-serif" font-size="30" font-weight="700">Add custom connector</text>
+  <text x="374" y="202" fill="#6b5f55" font-family="Arial, sans-serif" font-size="17">Connect to a remote MCP server.</text>
+  <text x="374" y="276" fill="#3d332a" font-family="Arial, sans-serif" font-size="16" font-weight="700">Name</text>
+  <rect x="374" y="294" width="532" height="52" rx="8" fill="#fbfaf8" stroke="#d8cdbc"/>
+  <text x="396" y="327" fill="#2f271f" font-family="Arial, sans-serif" font-size="18">AIProfile</text>
+  <text x="374" y="398" fill="#3d332a" font-family="Arial, sans-serif" font-size="16" font-weight="700">Remote MCP server URL</text>
+  <rect x="374" y="416" width="532" height="52" rx="8" fill="#fbfaf8" stroke="#d8cdbc"/>
+  <text x="396" y="449" fill="#2f271f" font-family="Menlo, Consolas, monospace" font-size="16">https://redacted-ngrok.ngrok-free.app/mcp</text>
+  <text x="374" y="520" fill="#6b5f55" font-family="Arial, sans-serif" font-size="16">Advanced OAuth settings are optional for this local tutorial.</text>
+  <rect x="692" y="574" width="214" height="48" rx="10" fill="#2f271f"/>
+  <text x="799" y="605" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="17" font-weight="700">Add connector</text>
+</svg>

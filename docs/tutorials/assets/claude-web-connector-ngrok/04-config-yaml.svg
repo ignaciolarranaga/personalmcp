@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">config.yaml updated with redacted ngrok URL</title>
+  <desc id="desc">A redacted editor screenshot showing auth issuer and resource configured with an ngrok HTTPS URL.</desc>
+  <rect width="1280" height="760" fill="#eef2f7"/>
+  <rect x="72" y="54" width="1136" height="652" rx="10" fill="#ffffff" stroke="#d7dde8"/>
+  <rect x="72" y="54" width="1136" height="48" rx="10" fill="#1f2937"/>
+  <text x="100" y="85" fill="#e5e7eb" font-family="Arial, sans-serif" font-size="16">config.yaml</text>
+  <g font-family="Menlo, Consolas, monospace" font-size="22">
+    <text x="108" y="152" fill="#6b7280">server:</text>
+    <text x="136" y="194" fill="#111827">port: <tspan fill="#2563eb">3000</tspan></text>
+    <text x="108" y="270" fill="#6b7280">auth:</text>
+    <text x="136" y="312" fill="#111827">mode: <tspan fill="#047857">local</tspan></text>
+    <text x="136" y="354" fill="#111827">anonymous_enabled: <tspan fill="#2563eb">true</tspan></text>
+    <rect x="128" y="380" width="996" height="106" rx="8" fill="#ecfdf5" stroke="#86efac"/>
+    <text x="152" y="424" fill="#111827">issuer: <tspan fill="#047857">https://redacted-ngrok.ngrok-free.app</tspan></text>
+    <text x="152" y="466" fill="#111827">resource: <tspan fill="#047857">https://redacted-ngrok.ngrok-free.app/mcp</tspan></text>
+    <text x="108" y="554" fill="#6b7280">llm:</text>
+    <text x="136" y="596" fill="#111827">provider: node-llama-cpp</text>
+  </g>
+</svg>
