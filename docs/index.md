@@ -39,7 +39,8 @@ The MCP endpoint runs at `http://localhost:3000/mcp`.
 
 - [Quick Start](/guide/quick-start)
 - [Tutorials](/tutorials/)
-- [Claude Custom Connector With ngrok](/tutorials/claude-web-connector-ngrok)
+- [Claude: npm person profile](/tutorials/claude-web-connector-ngrok)
+- [ChatGPT: npx company profile](/tutorials/chatgpt-npx-company-ngrok)
 - [Authentication](/reference/authentication)
 - [MCP Clients](/clients/)
 - [Model Setup](/guide/model-setup)

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">ChatGPT Settings Apps with Developer Mode enabled</title>
+  <desc id="desc">A redacted ChatGPT settings screenshot showing Apps advanced settings and Developer Mode enabled.</desc>
+  <rect width="1280" height="760" fill="#f5f5f0"/>
+  <rect x="72" y="54" width="1136" height="652" rx="18" fill="#ffffff" stroke="#d8d8d0"/>
+  <rect x="72" y="54" width="260" height="652" rx="18" fill="#f0f0ea"/>
+  <text x="112" y="112" fill="#202123" font-family="Arial, sans-serif" font-size="28" font-weight="700">ChatGPT</text>
+  <g font-family="Arial, sans-serif" font-size="18" fill="#565869">
+    <text x="112" y="182">General</text>
+    <rect x="100" y="210" width="198" height="42" rx="8" fill="#e5e5dc"/>
+    <text x="112" y="238" fill="#202123" font-weight="700">Apps</text>
+    <text x="112" y="302">Data controls</text>
+  </g>
+  <text x="388" y="118" fill="#202123" font-family="Arial, sans-serif" font-size="34" font-weight="700">Apps</text>
+  <text x="388" y="160" fill="#565869" font-family="Arial, sans-serif" font-size="18">Manage connected apps and developer settings.</text>
+  <rect x="388" y="216" width="744" height="238" rx="14" fill="#ffffff" stroke="#deded8"/>
+  <text x="422" y="262" fill="#202123" font-family="Arial, sans-serif" font-size="22" font-weight="700">Advanced settings</text>
+  <text x="422" y="302" fill="#565869" font-family="Arial, sans-serif" font-size="17">Create and test local or draft apps backed by remote MCP servers.</text>
+  <text x="422" y="374" fill="#202123" font-family="Arial, sans-serif" font-size="19" font-weight="700">Developer mode</text>
+  <rect x="1010" y="346" width="74" height="38" rx="19" fill="#10a37f"/>
+  <circle cx="1064" cy="365" r="15" fill="#ffffff"/>
+  <rect x="422" y="402" width="176" height="44" rx="10" fill="#202123"/>
+  <text x="510" y="431" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16" font-weight="700">Create app</text>
+</svg>

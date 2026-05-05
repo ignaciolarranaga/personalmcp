@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Create app form with the MCP URL</title>
+  <desc id="desc">A redacted ChatGPT create app modal showing an AIProfile app name and remote MCP server URL.</desc>
+  <rect width="1280" height="760" fill="#efefea"/>
+  <rect x="326" y="78" width="628" height="604" rx="18" fill="#ffffff" stroke="#d8d8d0"/>
+  <text x="374" y="140" fill="#202123" font-family="Arial, sans-serif" font-size="30" font-weight="700">Create app</text>
+  <text x="374" y="184" fill="#565869" font-family="Arial, sans-serif" font-size="17">Connect ChatGPT to a remote MCP server.</text>
+  <text x="374" y="258" fill="#202123" font-family="Arial, sans-serif" font-size="16" font-weight="700">Name</text>
+  <rect x="374" y="276" width="532" height="52" rx="8" fill="#fbfbf8" stroke="#d1d1c8"/>
+  <text x="396" y="309" fill="#202123" font-family="Arial, sans-serif" font-size="18">AIProfile Company Memory</text>
+  <text x="374" y="380" fill="#202123" font-family="Arial, sans-serif" font-size="16" font-weight="700">Remote MCP server URL</text>
+  <rect x="374" y="398" width="532" height="52" rx="8" fill="#fbfbf8" stroke="#d1d1c8"/>
+  <text x="396" y="431" fill="#202123" font-family="Menlo, Consolas, monospace" font-size="16">https://redacted-ngrok.ngrok-free.app/mcp</text>
+  <text x="374" y="502" fill="#565869" font-family="Arial, sans-serif" font-size="16">OAuth: dynamic client registration</text>
+  <text x="374" y="534" fill="#565869" font-family="Arial, sans-serif" font-size="16">Static client ID and secret: leave empty</text>
+  <rect x="714" y="598" width="192" height="48" rx="10" fill="#10a37f"/>
+  <text x="810" y="629" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="17" font-weight="700">Create app</text>
+</svg>

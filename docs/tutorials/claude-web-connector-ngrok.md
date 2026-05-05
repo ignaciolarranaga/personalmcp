@@ -1,10 +1,10 @@
-# Claude Custom Connector With ngrok
+# Claude Custom Connector With ngrok: npm and a Person Profile
 
-This tutorial connects Claude's web-hosted custom connector flow to a local AIProfile server through ngrok. By the end, Claude can call AIProfile tools, ingest a synthetic persona, and answer a question using stored memory.
+This tutorial uses a source checkout, npm scripts, and a fictional person profile. It connects Claude's web-hosted custom connector flow to a local AIProfile server through ngrok. By the end, Claude can call AIProfile tools, ingest the synthetic `Alex Rivera` persona, and answer a question using stored memory.
 
 Claude remote connectors connect from Anthropic's cloud infrastructure, not from your laptop. That means `localhost` is not reachable from Claude. For a local AIProfile server, expose the MCP endpoint with a temporary HTTPS tunnel such as ngrok.
 
-Use synthetic data while testing. The examples below use `Alex Rivera`, a fictional product and engineering leader.
+Use synthetic data while testing. The examples below use `Alex Rivera`, a fictional product and engineering leader. For a comparable ChatGPT tutorial that uses `npx` and a company profile, see [ChatGPT App With ngrok: npx and a Company Profile](/tutorials/chatgpt-npx-company-ngrok).
 
 ## Prerequisites
 

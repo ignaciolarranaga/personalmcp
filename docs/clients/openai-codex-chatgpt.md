@@ -4,6 +4,8 @@
 
 ChatGPT connects from OpenAI infrastructure, so a local `localhost` URL is not reachable. For local desktop hosting, expose AIProfile with ngrok:
 
+For a full visual walkthrough using `npx`, ChatGPT Developer Mode, and a synthetic company profile, see [ChatGPT App With ngrok: npx and a Company Profile](/tutorials/chatgpt-npx-company-ngrok).
+
 ```bash
 ngrok http 3000
 ```

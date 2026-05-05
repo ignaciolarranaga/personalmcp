@@ -31,6 +31,6 @@ Client guides:
 - [ChatGPT and Codex](/clients/openai-codex-chatgpt)
 - [Local server with ngrok](/clients/custom-connector-ngrok)
 
-For a full visual walkthrough of a Claude web custom connector, see [Claude Custom Connector With ngrok](/tutorials/claude-web-connector-ngrok).
+For full visual walkthroughs, see [Claude: npm person profile](/tutorials/claude-web-connector-ngrok) and [ChatGPT: npx company profile](/tutorials/chatgpt-npx-company-ngrok).
 
 See [Authentication](/reference/authentication) for OAuth grants, presets, scopes, and revocation.

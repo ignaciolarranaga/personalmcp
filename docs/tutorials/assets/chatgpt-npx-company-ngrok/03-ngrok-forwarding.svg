@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">ngrok forwarding URL visible</title>
+  <desc id="desc">A redacted ngrok terminal screenshot showing an HTTPS forwarding URL to localhost port 3000.</desc>
+  <rect width="1280" height="760" fill="#f6f7f9"/>
+  <rect x="48" y="42" width="1184" height="676" rx="12" fill="#111827"/>
+  <rect x="48" y="42" width="1184" height="42" rx="12" fill="#202938"/>
+  <circle cx="76" cy="63" r="7" fill="#ff5f57"/><circle cx="99" cy="63" r="7" fill="#ffbd2e"/><circle cx="122" cy="63" r="7" fill="#28c840"/>
+  <text x="640" y="69" text-anchor="middle" fill="#d1d5db" font-family="Arial, sans-serif" font-size="15">Terminal - ngrok</text>
+  <g font-family="Menlo, Consolas, monospace" font-size="22" fill="#e5e7eb">
+    <text x="84" y="132">$ ngrok http 3000</text>
+    <text x="84" y="204" fill="#9ca3af">Session Status                online</text>
+    <text x="84" y="246" fill="#9ca3af">Account                       redacted@example.com</text>
+    <text x="84" y="288" fill="#9ca3af">Region                        United States (us)</text>
+    <text x="84" y="330" fill="#9ca3af">Web Interface                 http://127.0.0.1:4040</text>
+    <text x="84" y="396" fill="#86efac">Forwarding                    https://redacted-ngrok.ngrok-free.app -&gt; http://localhost:3000</text>
+    <text x="84" y="480" fill="#facc15">Use https://redacted-ngrok.ngrok-free.app/mcp in ChatGPT.</text>
+  </g>
+</svg>

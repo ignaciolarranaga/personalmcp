@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">npx server running</title>
+  <desc id="desc">A redacted terminal screenshot showing AIProfile served through npx on localhost port 3000.</desc>
+  <rect width="1280" height="760" fill="#f6f7f9"/>
+  <rect x="48" y="42" width="1184" height="676" rx="12" fill="#101827"/>
+  <rect x="48" y="42" width="1184" height="42" rx="12" fill="#243044"/>
+  <circle cx="76" cy="63" r="7" fill="#ff5f57"/><circle cx="99" cy="63" r="7" fill="#ffbd2e"/><circle cx="122" cy="63" r="7" fill="#28c840"/>
+  <text x="640" y="69" text-anchor="middle" fill="#d1d5db" font-family="Arial, sans-serif" font-size="15">Terminal - AIProfile via npx</text>
+  <g font-family="Menlo, Consolas, monospace" font-size="21" fill="#e5e7eb">
+    <text x="84" y="132">$ npx --yes --ignore-scripts=false aiprofile serve</text>
+    <text x="84" y="194" fill="#9ca3af">Using config: ./config.yaml</text>
+    <text x="84" y="252" fill="#86efac">Memory vault initialized and unlocked.</text>
+    <text x="84" y="310" fill="#93c5fd">AIProfile MCP server listening on http://localhost:3000/mcp</text>
+    <text x="84" y="364" fill="#9ca3af">Auth mode: local</text>
+    <text x="84" y="406" fill="#9ca3af">Anonymous access: enabled for public-safe ask</text>
+    <text x="84" y="494" fill="#facc15">Keep this terminal running while ChatGPT uses the app.</text>
+  </g>
+</svg>

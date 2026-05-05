@@ -34,8 +34,12 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/tutorials/" },
           {
-            text: "Claude Custom Connector with ngrok",
+            text: "Claude: npm person profile",
             link: "/tutorials/claude-web-connector-ngrok",
+          },
+          {
+            text: "ChatGPT: npx company profile",
+            link: "/tutorials/chatgpt-npx-company-ngrok",
           },
         ],
       },

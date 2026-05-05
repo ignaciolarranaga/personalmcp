@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">memory-backed answer to the product update question</title>
+  <desc id="desc">A redacted ChatGPT screenshot showing an AIProfile ask tool call and a memory-backed answer about BrightLayer Systems.</desc>
+  <rect width="1280" height="760" fill="#f7f7f2"/>
+  <rect x="70" y="48" width="1140" height="664" rx="18" fill="#ffffff" stroke="#d8d8d0"/>
+  <rect x="122" y="96" width="956" height="110" rx="14" fill="#f0f0ea"/>
+  <text x="154" y="134" fill="#202123" font-family="Arial, sans-serif" font-size="18" font-weight="700">You</text>
+  <text x="154" y="166" fill="#202123" font-family="Arial, sans-serif" font-size="18">What should ChatGPT know before drafting a customer-facing product update</text>
+  <text x="154" y="194" fill="#202123" font-family="Arial, sans-serif" font-size="18">for BrightLayer Systems?</text>
+  <rect x="122" y="246" width="972" height="88" rx="14" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="154" y="298" fill="#5b21b6" font-family="Menlo, Consolas, monospace" font-size="18">AIProfile.ask(question="What should ChatGPT know before drafting...")</text>
+  <rect x="122" y="374" width="972" height="250" rx="14" fill="#ffffff" stroke="#e2e2dc"/>
+  <text x="154" y="416" fill="#202123" font-family="Arial, sans-serif" font-size="20" font-weight="700">ChatGPT</text>
+  <text x="154" y="460" fill="#202123" font-family="Arial, sans-serif" font-size="18">Draft BrightLayer updates around customer outcomes. Start with the workflow</text>
+  <text x="154" y="492" fill="#202123" font-family="Arial, sans-serif" font-size="18">problem, explain what changed, name rollout controls or limits, and end with</text>
+  <text x="154" y="524" fill="#202123" font-family="Arial, sans-serif" font-size="18">a concrete next action. Avoid hype, vague AI language, and claims without</text>
+  <text x="154" y="556" fill="#202123" font-family="Arial, sans-serif" font-size="18">evidence trails.</text>
+  <text x="154" y="660" fill="#6b7280" font-family="Arial, sans-serif" font-size="16">Used memory: product principles, customer profile, communication style, trust constraints.</text>
+</svg>
