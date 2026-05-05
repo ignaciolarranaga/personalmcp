@@ -28,11 +28,7 @@ export const AUTH_SCOPE_PRESETS = {
     "memory:read:kind:fact",
     "memory:read:kind:summary",
   ],
-  "owner-read": [
-    "aiprofile:ask",
-    "memory:read:*",
-    "memory:read:kind:*",
-  ],
+  "owner-read": ["aiprofile:ask", "memory:read:*", "memory:read:kind:*"],
   maintainer: [
     "aiprofile:ask",
     "aiprofile:ingest",
