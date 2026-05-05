@@ -11,6 +11,10 @@ import { requireMemoryDatabase } from "../memory/storage.js";
 import type { LlmProvider } from "../llm/LlmProvider.js";
 import type { IngestInput, IngestOutput, Config } from "../types.js";
 
+const DEFAULT_CONTEXT_TOKENS = 4096;
+const INGEST_CONTEXT_SAFETY_TOKENS = 256;
+const APPROX_CHARS_PER_TOKEN = 4;
+
 export async function handleIngest(
   input: IngestInput,
   llm: LlmProvider,
@@ -33,6 +37,20 @@ export async function handleIngest(
   }
 
   const system = buildExtractionSystem();
+  const sizeCheck = checkIngestSize(input, system, config);
+  if (!sizeCheck.ok) {
+    return {
+      success: false,
+      memory_items_added: 0,
+      memory_items_updated: 0,
+      ignored_items: 0,
+      summary: "The provided content is too large for one ingest call.",
+      warnings: [
+        sizeCheck.reason,
+        "Split the source into smaller thematic chunks such as contact info, work experience, education, skills, projects, and preferences, then ingest each chunk separately.",
+      ],
+    };
+  }
   const prompt = buildExtractionUser(input.content, input.source_type, input.instructions);
 
   let llmOutput: string;
@@ -102,6 +120,45 @@ export async function handleIngest(
     summary,
     warnings: warnings.length > 0 ? warnings : undefined,
   };
+}
+
+function checkIngestSize(
+  input: IngestInput,
+  systemPrompt: string,
+  config: Config,
+): { ok: true } | { ok: false; reason: string } {
+  const contextTokens = config.llm.context_tokens ?? DEFAULT_CONTEXT_TOKENS;
+  const outputTokens = config.llm.max_tokens;
+  const promptWithoutContent = buildExtractionUser("", input.source_type, input.instructions);
+  const fixedPromptTokens =
+    estimateTokens(systemPrompt) +
+    estimateTokens(promptWithoutContent) +
+    INGEST_CONTEXT_SAFETY_TOKENS;
+  const availableContentTokens = contextTokens - outputTokens - fixedPromptTokens;
+  const estimatedContentTokens = estimateTokens(input.content);
+
+  if (availableContentTokens <= 0) {
+    return {
+      ok: false,
+      reason:
+        `The configured LLM budget leaves no room for ingest content ` +
+        `(${contextTokens} context tokens, ${outputTokens} reserved output tokens).`,
+    };
+  }
+
+  if (estimatedContentTokens <= availableContentTokens) return { ok: true };
+
+  return {
+    ok: false,
+    reason:
+      `Estimated ingest content size is ${estimatedContentTokens} tokens, which exceeds the ` +
+      `${availableContentTokens}-token safe input budget for this model configuration. ` +
+      `Keep each chunk under about ${availableContentTokens * APPROX_CHARS_PER_TOKEN} characters.`,
+  };
+}
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / APPROX_CHARS_PER_TOKEN);
 }
 
 function buildIngestSummary(

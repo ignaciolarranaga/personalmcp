@@ -314,6 +314,50 @@ describe("MCP integration", () => {
     expect(server.db.listSources()).toHaveLength(0);
   });
 
+  it("rejects oversized ingest content before calling the LLM", async () => {
+    const largeResume = Array.from(
+      { length: 160 },
+      (_, i) =>
+        `Experience item ${i}: Ignacio led engineering teams, built local-first AI tools, and worked across product strategy, architecture, delivery, and mentoring.`,
+    ).join("\n");
+    const server = await startTestServer({
+      config: {
+        llm: {
+          context_tokens: 4096,
+          max_tokens: 1200,
+        },
+      },
+      responses: [
+        JSON.stringify({
+          items: [memoryItem("profile", "This should not be called.")],
+        }),
+      ],
+    });
+
+    const result = await callTool(server.client, "ingest", {
+      content: largeResume,
+      source_type: "document",
+      source_title: "Full resume",
+    });
+
+    expect(result.structuredContent).toMatchObject({
+      success: false,
+      memory_items_added: 0,
+      memory_items_updated: 0,
+      ignored_items: 0,
+      summary: "The provided content is too large for one ingest call.",
+    });
+    expect(result.structuredContent?.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Estimated ingest content size"),
+        expect.stringContaining("Split the source into smaller thematic chunks"),
+      ]),
+    );
+    expect(firstText(result)).toContain("too large for one ingest call");
+    expect(server.llm.calls).toHaveLength(0);
+    expect(server.db.listSources()).toHaveLength(0);
+  });
+
   it("returns an ingest failure response when the LLM fails", async () => {
     const server = await startTestServer({ responses: [new Error("model unavailable")] });
 

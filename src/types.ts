@@ -245,6 +245,7 @@ export interface Config {
     model_path: string;
     temperature: number;
     max_tokens: number;
+    context_tokens?: number;
   };
   memory: {
     path: string;

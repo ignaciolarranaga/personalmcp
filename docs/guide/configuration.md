@@ -15,6 +15,7 @@ llm:
   model_path: ./models/qwen3-4b-instruct-q4_k_m.gguf
   temperature: 0.2
   max_tokens: 1200
+  context_tokens: 4096
 
 memory:
   path: ./memory
@@ -43,6 +44,10 @@ http://localhost:<port>/mcp
 ## Local model
 
 `llm.model_path` points to the GGUF model file. Use [Model Setup](/guide/model-setup) to download a curated model and optionally update `config.yaml`.
+
+`llm.max_tokens` controls the response token budget for local model calls.
+
+`llm.context_tokens` is the model context window used for prompt budgeting. Ingest rejects oversized source text before calling the model when the estimated prompt would exceed this window. If you use a model with a larger context window, increase this value to match the model.
 
 ## Memory mode
 

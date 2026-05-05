@@ -51,6 +51,7 @@ function defaultConfig(): Config {
       model_path: "./models/qwen3-4b-instruct-q4_k_m.gguf",
       temperature: 0.2,
       max_tokens: 1200,
+      context_tokens: 4096,
     },
     memory: {
       path: "./memory",

@@ -14,6 +14,8 @@ Start with `suggest_question` if you have no memory yet. The tool will suggest w
 
 Processes profile source material and updates local memory.
 
+Large documents should be split into thematic chunks before ingestion. The server estimates each ingest prompt against the configured `llm.context_tokens` budget and rejects oversized single calls with chunking guidance instead of sending content that is likely to produce zero extracted memory.
+
 ```text
 ingest(
   content: string,           // transcript, note, article, answer, etc.
