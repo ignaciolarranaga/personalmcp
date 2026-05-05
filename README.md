@@ -23,7 +23,7 @@ Useful starting points:
 
 ## Prerequisites
 
-- Node.js 22 or later
+- Node.js 20.19 or later
 - Free disk space for the selected local model. `qwen3-4b` needs about 2.5 GB.
 - macOS, Linux, or Windows. Metal and CUDA acceleration are detected automatically.
 - C++ build tools for the SQLite native addon. On macOS, run `xcode-select --install`.
